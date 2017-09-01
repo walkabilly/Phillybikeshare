@@ -52,6 +52,7 @@ chicagoClean$end_time <- as.POSIXct(chicagoClean$end_time, format='%m/%d/%Y')
 
 ## Boston
 
+```{r setup, include=FALSE}
 Boston = do.call(rbind, lapply(hubway, function(x) read.csv(x, stringsAsFactors = FALSE)))
 Boston$city <- "Boston"
 head(Boston)
@@ -76,10 +77,10 @@ format(as.Date(bostonClean$start_time, "%m %d %Y"))
 bostonClean$start_time <- as.POSIXct(bostonClean$start_time, format='%m/%d/%Y')
 bostonClean$end_time <- as.POSIXct(bostonClean$end_time, format='%m/%d/%Y')
 head(bostonClean)
-
+```
 
 ##Philly
-
+```{r setup, include=FALSE}
 philly = do.call(rbind, lapply(indeg, function(x) read.csv(x, stringsAsFactors = FALSE)))
 philly$city <- "Philly"
 head(philly)
@@ -101,9 +102,10 @@ format(phillyClean$end_time, '%m%d%Y')
 phillyClean$start_time <- as.POSIXct(phillyClean$start_time, format='%m/%d/%Y')
 phillyClean$end_time <- as.POSIXct(phillyClean$end_time, format='%m/%d/%Y')
 head(phillyClean)
+```
 
 ##Washington 
-
+```{r setup, include=FALSE}
 washington = do.call(rbind, lapply(cabi, function(x) read.csv(x, stringsAsFactors = FALSE)))
 washington$city = "Washington"
 washington$start_time <- gsub(" .*", "", washington$start_time)
@@ -118,16 +120,19 @@ washingtonClean$start_time <- as.POSIXct(washingtonClean$start_time, format='%m/
 washingtonClean$end_time <- as.POSIXct(washingtonClean$end_time, format='%m/%d/%Y', '%m/%d/%y')
 washingtonClean$duration <- washingtonClean$duration/1000
 head(washingtonClean)
+```
 
-##appending data
-
+## Appending data
+```{r setup, include=FALSE}
 strikeData <- rbind(chicagoClean, phillyClean, washingtonClean, bostonClean)
 head(strikeData)
 
-write.table(strikeData, file = "C:/Users/Richard Buote/Desktop/strikeData.csv")
+write.csv(strikeData, file = "C:/Users/Richard Buote/Desktop/strikeData.csv")
+```
 
-##cleaning and recoding
+## Cleaning and recoding
 
+```{r setup, include=FALSE}
 strikeData$month <- month(strikeData$start_time)
 strikeData$day <- day(strikeData$start_time)
 strikeData$year <- year(strikeData$start_time)
@@ -147,6 +152,7 @@ strikeData$memberType <- car::recode(strikeData$passholder_type, "'Customer'='sh
 table(strikeData$memberType, strikeData$passholder_type)
 
 table(strikeData$passholder_type)
+```
 
 strikeData1 <- strikeData %>% group_by(year, month, day, city) %>% summarise(sumDuration = sum(duration,
                                                                                                na.rm = TRUE), mDuration = mean(duration, na.rm = TRUE), total = n())
