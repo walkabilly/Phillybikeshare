@@ -1,0 +1,266 @@
+---
+title: "BikeshareStrikeWrangling"
+author: "Daniel Fuller"
+date: '2018-04-25'
+output:
+      html_document:
+        keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
+options(scipen = 2, digits=4)
+```
+
+## Merging the data from each city
+
+```{r}
+library(stringr)
+library(knitr)
+library(dplyr)
+library(lubridate)
+library(anytime)
+
+## Chicago - Divvy
+divvy = list.files(pattern = "/Bikeshare Data/Divvy.*\\.csv")
+
+cabi = list.files(pattern = "/Bikeshare Data/Cabi.*\\.csv")
+indeg = list.files(pattern = "/Indego/Bikeshare Data.*\\.csv")
+hubway = list.files(pattern = "/Hubway/Bikeshare Data.*\\.csv")
+```
+
+## Chicago
+
+```{r}
+chicago <- do.call(rbind, lapply(divvy, function(x) read.csv(x, stringsAsFactors = FALSE)))
+chicago$city <- "Chicago"
+head(chicago)
+
+chicago$starttime <- gsub(" .*", "", chicago$starttime)
+chicago$stoptime <- gsub(" .*", "", chicago$stoptime)
+
+chicagoClean <- subset(chicago, select = c(trip_id, tripduration, starttime, stoptime, usertype, city), stringsAsFactors = FALSE)
+
+names(chicagoClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", "city")
+head(chicagoClean)
+
+lct <- Sys.getlocale("LC_TIME"); Sys.setlocale("LC_TIME", "C")
+
+tester <- c("1/1/2016", "2/28/2016")
+anydate(tester)
+chicagoClean$start_time <- as.POSIXct(chicagoClean$start_time, format='%m/%d/%Y')
+chicagoClean$end_time <- as.POSIXct(chicagoClean$end_time, format='%m/%d/%Y')
+```
+
+## Boston
+
+```{r}
+Boston = do.call(rbind, lapply(hubway, function(x) read.csv(x, stringsAsFactors = FALSE)))
+Boston$city <- "Boston"
+head(Boston)
+
+Boston$ID <- seq.int(nrow(Boston))
+
+bostonClean2 <- subset(Boston, select = c(ID, tripduration, starttime, stoptime, usertype, city))
+head(bostonClean)
+
+names(bostonClean2) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", "city")
+
+gsub("-", "/", bostonClean2$start_time)
+bostonClean2$newdate <- strftime(as.character(bostonClean2$start_time), "%m/%d/%Y")
+
+gsub("-", "/", bostonClean$end_time)
+bostonClean2$newenddate <- strftime(as.character(bostonClean2$end_time), "%m/%d/%Y")
+
+bostonClean <- subset(bostonClean2, select = c(trip_id, duration, newdate, newenddate, passholder_type, city))
+names(bostonClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", "city")
+format(as.Date(bostonClean$start_time, "%m %d %Y"))
+
+bostonClean$start_time <- as.POSIXct(bostonClean$start_time, format='%m/%d/%Y')
+bostonClean$end_time <- as.POSIXct(bostonClean$end_time, format='%m/%d/%Y')
+head(bostonClean)
+```
+
+##Philly
+```{r}
+philly = do.call(rbind, lapply(indeg, function(x) read.csv(x, stringsAsFactors = FALSE)))
+philly$city <- "Philly"
+head(philly)
+
+philly$end_time <- gsub(" .*", "", philly$end_time)
+philly$start_time <- gsub(" .*", "", philly$start_time)
+
+phillyClean <- subset(philly, select = c(trip_id, duration, start_time, end_time, passholder_type, city))
+names(phillyClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", "city")
+
+tester <- c("1/1/16", "01/1/2016", "02/02/15", "02/02/2015")
+
+parse_date_time(phillyClean$start_time, c('%m%d%y', '%m%d%Y'))
+format(phillyClean$start_time, '%m%d%Y')
+format(phillyClean$end_time, '%m%d%Y')
+
+
+
+phillyClean$start_time <- as.POSIXct(phillyClean$start_time, format='%m/%d/%Y')
+phillyClean$end_time <- as.POSIXct(phillyClean$end_time, format='%m/%d/%Y')
+head(phillyClean)
+```
+
+##Washington 
+```{r}
+washington = do.call(rbind, lapply(cabi, function(x) read.csv(x, stringsAsFactors = FALSE)))
+washington$city = "Washington"
+washington$start_time <- gsub(" .*", "", washington$start_time)
+washington$end_time <- gsub(" .*", "", washington$end_time)
+
+head(washington)
+
+washingtonClean <- subset(washington, select = c("trip_id", "duration", "start_time", "end_time", "passholder_type", "city"))
+names(washingtonClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", "city")
+
+washingtonClean$start_time <- as.POSIXct(washingtonClean$start_time, format='%m/%d/%Y')
+washingtonClean$end_time <- as.POSIXct(washingtonClean$end_time, format='%m/%d/%Y', '%m/%d/%y')
+washingtonClean$duration <- washingtonClean$duration/1000
+head(washingtonClean)
+```
+
+## Appending data
+```{r}
+strikeData <- rbind(chicagoClean, phillyClean, washingtonClean, bostonClean)
+head(strikeData)
+
+write.csv(strikeData, file = "C:/Users/Richard Buote/Desktop/strikeData.csv")
+```
+
+## Cleaning and recoding
+
+```{r}
+strikeData$month <- month(strikeData$start_time)
+strikeData$day <- day(strikeData$start_time)
+strikeData$year <- year(strikeData$start_time)
+
+strikeData <- filter(strikeData, year > 2015)
+
+strikeData$memberType <- car::recode(strikeData$passholder_type, "'Customer'='shortterm';
+'Subscriber'='member';
+                                     'Indego30'='member';
+                                     'IndegoFlex'='shortterm';
+                                     'Walk-up'='shortterm'; 
+                                     'Registered' = 'member';
+                                     'Casual' = 'shortterm';
+                                     'Dependent'=NA;",
+                                     as.factor.result = TRUE)
+
+table(strikeData$memberType, strikeData$passholder_type)
+
+table(strikeData$passholder_type)
+```
+
+```{r}
+strikeData1 <- strikeData %>% group_by(year, month, day, city) %>% summarise(sumDuration = sum(duration,
+                                                                                               na.rm = TRUE), mDuration = mean(duration, na.rm = TRUE), total = n())
+
+strikeData1$date = dmy(paste(strikeData1$day, strikeData1$month, strikeData1$year))
+
+library(ggplot2)
+
+test <- ggplot(strikeData1, aes(x = date, y = total)) + geom_rect(aes(xmin = as.Date("2016-11-01",
+                                                                                     format = "%Y-%m-%d"), xmax = as.Date("2016-11-07", format = "%Y-%m-%d"),
+                                                                      ymin = 0, ymax = Inf), alpha = 0.9, fill = "grey") + geom_line(aes(color = factor(city))) +
+  theme(axis.line = element_line(colour = "black"), panel.background = element_blank(),
+        axis.title = element_text(size = 16), text = element_text(size = 14)) +
+  xlab("Date") + ylab("Number of Trips per Day") +
+  scale_colour_discrete(name = "Cities", breaks = c("Chicago", "Philly", "Washington", "Boston"), labels = c("Chicago", "Philly", "Washington", "Boston"))
+
+print(test)
+
+write.csv(strikeData, file = "StrikeDatafour.csv")
+
+strikeData2 <- strikeData %>% group_by(year, month, day, city, memberType) %>% summarise(sumDuration = sum(duration,
+                                                                                               na.rm = TRUE), mDuration = mean(duration, na.rm = TRUE), total = n())
+strikeData2$date = dmy(paste(strikeData2$day, strikeData2$month, strikeData2$year))
+
+test2 <- ggplot(strikeData2, aes(x = date, y = total)) + geom_rect(aes(xmin = as.Date("2016-11-01",
+                                                                                     format = "%Y-%m-%d"), xmax = as.Date("2016-11-07", format = "%Y-%m-%d"),
+                                                                      ymin = 0, ymax = Inf), alpha = 0.9, fill = "grey") + geom_line(aes(color = factor(memberType))) +
+  theme(axis.line = element_line(colour = "black"), panel.background = element_blank(),
+        axis.title = element_text(size = 16), text = element_text(size = 14)) +
+  xlab("Date") + ylab("Number of Trips per Day") +
+  scale_colour_discrete(name = "Member Type", breaks = c("member", "shortterm"), labels = c("Member", "Short Term"))
+
+print(test2)
+
+##Export data
+
+write.table(strikeData, "C:/Users/Richard Buote/Desktop/strikeData.csv", sep=",")
+write.table(summarytest, "C:/Users/Richard Buote/Desktop/summarytest.csv", sep=",")
+
+
+##by day, trips, and duration
+
+summarytest <- strikeData %>%
+  group_by(start_time) %>%
+  summarize(mean_duration = mean(duration), number_trips = n())
+
+##Collapse Data
+
+bostoncoll <- bostonClean %>%
+  group_by(start_time) %>%
+  summarize(mean_duration = mean(duration), number_trips = n())
+
+bostoncoll$city <- "Boston"
+
+chicagocoll <- chicagoClean %>%
+  group_by(start_time) %>%
+  summarize(mean_duration = mean(duration), number_trips = n())
+
+chicagocoll$city <- "Chicago"
+
+washingtoncoll <- washingtonClean %>%
+  group_by(start_time) %>%
+  summarize(mean_duration = mean(duration), number_trips = n())
+
+washingtoncoll$city <- "Washington"
+
+phillycoll <- phillyClean %>%
+  group_by(start_time) %>%
+  summarize(mean_duration = mean(duration), number_trips = n())
+
+phillycoll$city <- "Philly"
+
+##Normalize by city pop
+## Boston - 667137 (6.67137)
+## Chicago - 2695598 (26.95598)
+## Washington - 672228 (6.72228)
+## Philly - 1567872 (15.67872)
+
+bostoncoll$by100000 <- bostoncoll$number_trips/6.67137
+chicagocoll$by100000 <- chicagocoll$number_trips/26.95598
+washingtoncoll$by100000 <- washingtoncoll$number_trips/6.72228
+phillycoll$by100000 <- phillycoll$number_trips/15.67872
+
+
+CityColl <- rbind(bostoncoll, chicagocoll, washingtoncoll, phillycoll)
+
+##Remove before 2015 and order by date
+
+CityColl$start_time <- as.Date(CityColl$start_time, format= "%Y-%m-%d")
+CityColl <- subset(CityColl, start_time > "2015-12-31")
+CityColl <- CityColl[order(as.Date(CityColl$start_time, format = "%Y-%m-%d")),]
+
+ggplot(CityColl, aes(x = start_time, y = by100000, group = city, color = city)) +
+  geom_line()
+
+phillycoll$start_time <- as.Date(phillycoll$start_time, format= "%Y-%m-%d")
+phillycoll <- subset(phillycoll, start_time > "2015-12-31")
+
+chicagocoll$start_time <- as.Date(chicagocoll$start_time, format= "%Y-%m-%d")
+chicagocoll <- subset(chicagocoll, start_time > "2015-12-31")
+
+washingtoncoll$start_time <- as.Date(washingtoncoll$start_time, format= "%Y-%m-%d")
+washingtoncoll <- subset(washingtoncoll, start_time > "2015-12-31")
+
+##add dummy to CityColl
+
+CityColl$dummy <-  ifelse(CityColl$start_time >= as.Date("2016/11/01", format = "%Y/%m/%d"), 1, 0)
+```
