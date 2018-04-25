@@ -55,9 +55,11 @@ opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
 
 ```r
 city_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/CityColl.csv")
+member_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/MemberColl.csv")
 
 ### Convert start_time from factor to date
 city_data$start_time <- mdy(city_data$start_time)
+member_data$start_time <- mdy(member_data$start_time)
 ```
 
 ### Time Series Plot 
@@ -77,9 +79,71 @@ plot(cityplot)
 
 ![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-3-1.png)<!-- -->
 
-#### Bikeshare members only
+#### Bikeshare member type by city
+
+#### Philadelphia
 
 
+```r
+philly_data <- filter(member_data, city == "Philly")
+
+philly_member_plot <- ggplot(data = philly_data, aes(x = start_time, y = by10000)) + 
+    geom_line() + stat_smooth(aes(group = dummy), method = "lm", formula = y ~ 
+    poly(x, 2), se = FALSE) + geom_vline(xintercept = as.numeric(city_data$start_time[1398]), 
+    linetype = 4) + facet_wrap(~membertype) + theme_classic()
+
+plot(philly_member_plot)
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-4-1.png)<!-- -->
+
+#### Boston
+
+
+```r
+boston_data <- filter(member_data, city == "Boston")
+
+boston_member_plot <- ggplot(data = boston_data, aes(x = start_time, y = by10000)) + 
+    geom_line() + stat_smooth(aes(group = dummy), method = "lm", formula = y ~ 
+    poly(x, 2), se = FALSE) + geom_vline(xintercept = as.numeric(city_data$start_time[1398]), 
+    linetype = 4) + facet_wrap(~membertype) + theme_classic()
+
+plot(boston_member_plot)
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
+
+#### Chicago
+
+
+```r
+chicago_data <- filter(member_data, city == "Chicago")
+
+chicago_member_plot <- ggplot(data = chicago_data, aes(x = start_time, y = by10000)) + 
+    geom_line() + stat_smooth(aes(group = dummy), method = "lm", formula = y ~ 
+    poly(x, 2), se = FALSE) + geom_vline(xintercept = as.numeric(city_data$start_time[1398]), 
+    linetype = 4) + facet_wrap(~membertype) + theme_classic()
+
+plot(chicago_member_plot)
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
+
+#### Washington
+
+
+```r
+Washington_data <- filter(member_data, city == "Washington")
+
+washington_member_plot <- ggplot(data = Washington_data, aes(x = start_time, 
+    y = by10000)) + geom_line() + stat_smooth(aes(group = dummy), method = "lm", 
+    formula = y ~ poly(x, 2), se = FALSE) + geom_vline(xintercept = as.numeric(city_data$start_time[1398]), 
+    linetype = 4) + facet_wrap(~membertype) + theme_classic()
+
+plot(washington_member_plot)
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
 
 ### Linear Model
 
