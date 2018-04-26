@@ -23,7 +23,7 @@ opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
 ```
 
 ```{r}
-city_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/CityColl.csv")
+city_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/city_day_sum.csv")
 member_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/MemberColl.csv")
 
 ### Convert start_time from factor to date
