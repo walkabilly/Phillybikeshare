@@ -20,6 +20,7 @@ library(knitr)
 library(dplyr)
 library(lubridate)
 library(magrittr)
+library(purrr)
 
 ## Chicago - Divvy
 divvy = list.files(path = "./Bikeshare Data/", pattern = "Divvy.*\\.csv")
@@ -91,19 +92,39 @@ head(bostonClean)
 ```
 
 ##Philly
-```{r}
-philly <- indeg %>% 
-    map(function(x) {
-        read.csv(paste0("./Bikeshare Data/", x))
-    }) %>%
-    reduce(rbind)
 
+I had to import the files individually because R was reading in the variables as different types and it was messing up the `rbind` call. I ran this code to diagnose the problem:
+
+```
+cbind(
+    philly1 = sapply(philly1, class),
+    philly2 = sapply(philly2, class),
+    philly3 = sapply(philly3, class),
+    philly4 = sapply(philly4, class)
+)
+```
+
+From this article [https://stackoverflow.com/questions/1632772/appending-rows-to-a-dataframe-the-factor-problem]
+
+```{r}
+philly1 <- read.csv("./Bikeshare Data/Indego_Trips_2016Q1.csv")
+  philly1 <- subset(philly1, select = c(trip_id, duration, start_time, end_time, passholder_type), stringsAsFactors = FALSE)
+  
+philly2 <- read.csv("./Bikeshare Data/Indego_Trips_2016Q2.csv")
+  philly2 <- subset(philly2, select = c(trip_id, duration, start_time, end_time, passholder_type), stringsAsFactors = FALSE)
+
+philly3 <- read.csv("./Bikeshare Data/Indego_Trips_Q3_2016_trips.csv")
+  philly3 <- subset(philly3, select = c(trip_id, duration, start_time, end_time, passholder_type), stringsAsFactors = FALSE)
+
+philly4 <- read.csv("./Bikeshare Data/Indego_trips_Q4_2016.csv")
+  philly4 <- subset(philly4, select = c(trip_id, duration, start_time, end_time, passholder_type), stringsAsFactors = FALSE)
+
+philly <- bind_rows(philly1, philly2, philly3, philly4)    
+      
 philly$city <- "Philly"
-head(philly)
 
 phillyClean <- subset(philly, select = c(trip_id, duration, start_time, end_time, passholder_type, city), stringsAsFactors = FALSE)
 names(phillyClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", "city")
-head(phillyClean)
 
 ## Clean Start Time
 phillyClean$start_time <- gsub(" .*", "", phillyClean$start_time)
@@ -125,6 +146,7 @@ washington <- cabi %>%
     reduce(rbind)
 
 washington$city <- "Washington"
+washington$duration <- as.integer(washington$duration)
 head(washington)
 
 washingtonClean <- subset(washington, select = c(trip_id, duration, start_time, end_time, passholder_type, city), stringsAsFactors = FALSE)
@@ -145,7 +167,12 @@ head(washingtonClean)
 ## Appending data
 ```{r}
 strikeData <- rbind(chicagoClean, phillyClean, washingtonClean, bostonClean)
+strikeData$month <- month(strikeData$start_time)
+strikeData$day <- day(strikeData$start_time)
+strikeData$year <- year(strikeData$start_time)
+
 strikeData <- filter(strikeData, year > 2015)
+
 head(strikeData)
 
 write.csv(strikeData, file = "strikeData.csv")
@@ -154,12 +181,7 @@ write.csv(strikeData, file = "strikeData.csv")
 ## Cleaning and recoding
 
 ```{r}
-strikeData$month <- month(strikeData$start_time)
-strikeData$day <- day(strikeData$start_time)
-strikeData$year <- year(strikeData$start_time)
-
-
-##add dummy to CityColl
+#add dummy to CityColl
 
 strikeData$dummy <-  ifelse(strikeData$start_time >= as.Date("2016/11/01", format = "%Y/%m/%d"), 1, 0)
 
@@ -200,110 +222,5 @@ city_day_sum$by100000 <-
 
 city_day_sum <- arrange(city_day_sum, start_time)
 
-write.csv(city_day_sum, "city_day_sum1.csv")
-
-
-
-strikeData1$date = dmy(paste(strikeData1$day, strikeData1$month, strikeData1$year))
-
-library(ggplot2)
-
-test <- ggplot(strikeData1, aes(x = date, y = total)) + geom_rect(aes(xmin = as.Date("2016-11-01",
-                                                                                     format = "%Y-%m-%d"), xmax = as.Date("2016-11-07", format = "%Y-%m-%d"),
-                                                                      ymin = 0, ymax = Inf), alpha = 0.9, fill = "grey") + geom_line(aes(color = factor(city))) +
-  theme(axis.line = element_line(colour = "black"), panel.background = element_blank(),
-        axis.title = element_text(size = 16), text = element_text(size = 14)) +
-  xlab("Date") + ylab("Number of Trips per Day") +
-  scale_colour_discrete(name = "Cities", breaks = c("Chicago", "Philly", "Washington", "Boston"), labels = c("Chicago", "Philly", "Washington", "Boston"))
-
-print(test)
-
-write.csv(strikeData, file = "StrikeDatafour.csv")
-
-strikeData2 <- strikeData %>% group_by(year, month, day, city, memberType) %>% summarise(sumDuration = sum(duration,
-                                                                                               na.rm = TRUE), mDuration = mean(duration, na.rm = TRUE), total = n())
-strikeData2$date = dmy(paste(strikeData2$day, strikeData2$month, strikeData2$year))
-
-test2 <- ggplot(strikeData2, aes(x = date, y = total)) + geom_rect(aes(xmin = as.Date("2016-11-01",
-                                                                                     format = "%Y-%m-%d"), xmax = as.Date("2016-11-07", format = "%Y-%m-%d"),
-                                                                      ymin = 0, ymax = Inf), alpha = 0.9, fill = "grey") + geom_line(aes(color = factor(memberType))) +
-  theme(axis.line = element_line(colour = "black"), panel.background = element_blank(),
-        axis.title = element_text(size = 16), text = element_text(size = 14)) +
-  xlab("Date") + ylab("Number of Trips per Day") +
-  scale_colour_discrete(name = "Member Type", breaks = c("member", "shortterm"), labels = c("Member", "Short Term"))
-
-print(test2)
-
-##Export data
-
-write.table(strikeData, "C:/Users/Richard Buote/Desktop/strikeData.csv", sep=",")
-write.table(summarytest, "C:/Users/Richard Buote/Desktop/summarytest.csv", sep=",")
-
-
-##by day, trips, and duration
-
-summarytest <- strikeData %>%
-  group_by(start_time) %>%
-  summarize(mean_duration = mean(duration), number_trips = n())
-
-##Collapse Data
-
-bostoncoll <- bostonClean %>%
-  group_by(start_time) %>%
-  summarize(mean_duration = mean(duration), number_trips = n())
-
-bostoncoll$city <- "Boston"
-
-chicagocoll <- chicagoClean %>%
-  group_by(start_time) %>%
-  summarize(mean_duration = mean(duration), number_trips = n())
-
-chicagocoll$city <- "Chicago"
-
-washingtoncoll <- washingtonClean %>%
-  group_by(start_time) %>%
-  summarize(mean_duration = mean(duration), number_trips = n())
-
-washingtoncoll$city <- "Washington"
-
-phillycoll <- phillyClean %>%
-  group_by(start_time) %>%
-  summarize(mean_duration = mean(duration), number_trips = n())
-
-phillycoll$city <- "Philly"
-
-##Normalize by city pop
-## Boston - 667137 (6.67137)
-## Chicago - 2695598 (26.95598)
-## Washington - 672228 (6.72228)
-## Philly - 1567872 (15.67872)
-
-bostoncoll$by100000 <- bostoncoll$number_trips/6.67137
-chicagocoll$by100000 <- chicagocoll$number_trips/26.95598
-washingtoncoll$by100000 <- washingtoncoll$number_trips/6.72228
-phillycoll$by100000 <- phillycoll$number_trips/15.67872
-
-
-
-CityColl <- rbind(bostoncoll, chicagocoll, washingtoncoll, phillycoll)
-
-##Remove before 2015 and order by date
-
-CityColl$start_time <- as.Date(CityColl$start_time, format= "%Y-%m-%d")
-CityColl <- subset(CityColl, start_time > "2015-12-31")
-CityColl <- CityColl[order(as.Date(CityColl$start_time, format = "%Y-%m-%d")),]
-
-ggplot(CityColl, aes(x = start_time, y = by100000, group = city, color = city)) +
-  geom_line()
-
-phillycoll$start_time <- as.Date(phillycoll$start_time, format= "%Y-%m-%d")
-phillycoll <- subset(phillycoll, start_time > "2015-12-31")
-
-chicagocoll$start_time <- as.Date(chicagocoll$start_time, format= "%Y-%m-%d")
-chicagocoll <- subset(chicagocoll, start_time > "2015-12-31")
-
-washingtoncoll$start_time <- as.Date(washingtoncoll$start_time, format= "%Y-%m-%d")
-washingtoncoll <- subset(washingtoncoll, start_time > "2015-12-31")
-
-
+write.csv(city_day_sum, "city_day_sum.csv")
 ```
