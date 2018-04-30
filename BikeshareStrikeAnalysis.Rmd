@@ -17,6 +17,8 @@ library(ggplot2)
 library(forecast)
 library(tseries)
 library(formatR)
+library(CausalImpact)
+library(zoo)
 
 options(scipen = 2, digits=4)
 opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
