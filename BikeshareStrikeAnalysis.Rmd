@@ -326,19 +326,29 @@ Phil_dat <- arrange(Phil_dat,start_time)
 
 ##Set pre- and post-periods
 pre.period <- as.Date(c("2016-01-01", "2016-10-31"))
-post.period <- as.Date(c("2016-11-01", "2016-11-07"))
+post.period <- as.Date(c("2016-11-01", "2016-12-31"))
+post.period2 <- as.Date(c("2016-11-01", "2016-11-07")) ##Assess the impact one week after the strike
 
 ##Modelling all Phil data
 Phil_dat$start_time <- as.Date(Phil_dat$start_time)
 
-data <- zoo(cbind(Phil_dat$by100000), as.Date(Phil_dat$start_time))
+data <- zoo(cbind(Phil_dat$by100000, avgTemp_16$MEAN), as.Date(Phil_dat$start_time))
 
-impact_phil <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7))
+##Modelling without covaraites
+impact_phil <- CausalImpact(data = data[,1], pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7))
+##Post-period set as one week after the strike
+impact_phil2 <- CausalImpact(data = data[,1], pre.period = pre.period, post.period = post.period2, model.args = list(niter=5000, nseasons=7))
+##Modelling with covaraites: temperature
+impact_phil3 <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7))
+##Dynamic regression: whether to include a time-varying regression coefficient. Default is FALSE
+impact_phil4 <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7, dynamic.regression=T))
+##Control monthly effect
+impact_phil5 <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=12, season.duration= 30))
 
 plot(impact_phil)
-
-##Post-period: 2-weeks
-
+plot(impact_phil3)
+plot(impact_phil4) ##Not a good fit!!!
+plot(impact_phil5) ##Not a good fit!!!
 
 
 ##Modelling Philadelphia data based on membership
