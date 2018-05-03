@@ -315,7 +315,7 @@ fit_w_seasonality
 seas_fcast <- forecast(fit_w_seasonality, h=30)
 plot(seas_fcast)
 ```
-##Philly CausalImpact
+##Philly CausalImpact---------------------
 ```{r}
 Phil_dat <- filter(final_data, city=="Philly")
 ##Add records for the missing two days
@@ -340,15 +340,18 @@ impact_phil <- CausalImpact(data = data[,1], pre.period = pre.period, post.perio
 impact_phil2 <- CausalImpact(data = data[,1], pre.period = pre.period, post.period = post.period2, model.args = list(niter=5000, nseasons=7))
 ##Modelling with covaraites: temperature
 impact_phil3 <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7))
-##Dynamic regression: whether to include a time-varying regression coefficient. Default is FALSE
-impact_phil4 <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7, dynamic.regression=T))
-##Control monthly effect
-impact_phil5 <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=12, season.duration= 30))
+# ##Dynamic regression: whether to include a time-varying regression coefficient. Default is FALSE
+# impact_phil4 <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7, dynamic.regression=T))
+# ##Control monthly effect
+# impact_phil5 <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=12, season.duration= 30))
+# ##Control seasonal effect
+# impact_phil6 <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=4))
 
 plot(impact_phil)
 plot(impact_phil3)
-plot(impact_phil4) ##Not a good fit!!!
-plot(impact_phil5) ##Not a good fit!!!
+# plot(impact_phil4) ##Not a good fit!!!
+# plot(impact_phil5) ##Not a good fit!!!
+# plot(impact_phil6) ##Not a good fit!!!
 
 
 ##Modelling Philadelphia data based on membership
@@ -361,6 +364,44 @@ data_mem <- zoo(cbind(phil_bs_mem$by10000), phil_bs_mem$start_time)
 
 impact_pil_mem <- CausalImpact(data = data_mem, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7))
 ```
+##Boston data analysis----------------------------
+```{r}
+Boston_dat <- filter(final_data, city=="Boston")
+Boston_dat$start_time <- as.Date(Boston_dat$start_time)
 
+data_bos <- zoo(cbind(Boston_dat$by100000), as.Date(Boston_dat$start_time))
+
+impact_bos <- CausalImpact(data = data_bos, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7))
+
+plot(impact_bos)
+```
+##Chicago data anlysis ---------------------------
+```{r}
+Chicago_dat <- filter(final_data, city=="Chicago")
+Chicago_dat$start_time <- as.Date(Chicago_dat$start_time)
+
+data_chi <- zoo(cbind(Chicago_dat$by100000), as.Date(Chicago_dat$start_time))
+
+impact_chi <- CausalImpact(data = data_chi, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7))
+
+plot(impact_chi)  ##Not a good fit to the data
+```
+##Washington data anlysis ---------------------------
+```{r}
+DC_dat <- filter(final_data, city=="Washington")  ##Missing four days' data
+DC_dat[363, "start_time"] <- "2016-01-23"
+DC_dat[364, "start_time"] <- "2016-01-24"
+DC_dat[365, "start_time"] <- "2016-01-25"
+DC_dat[366, "start_time"] <- "2016-01-26"
+
+DC_dat$start_time <- as.Date(DC_dat$start_time)
+DC_dat <- arrange(DC_dat, start_time)
+
+data_DC <- zoo(cbind(DC_dat$by100000), as.Date(DC_dat$start_time))
+
+impact_DC <- CausalImpact(data = data_DC, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000,nseasons=7))
+
+plot(impact_DC)  ##Not a good fit to the data
+```
 
 
