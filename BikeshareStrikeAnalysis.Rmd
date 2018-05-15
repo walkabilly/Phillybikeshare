@@ -10,7 +10,7 @@ output:
 ```{r}
 library(stringr)
 library(knitr)
-library(dplyr)
+library(tidyverse)
 library(lubridate)
 library(ggplot2)
 library(forecast)
@@ -30,7 +30,7 @@ final_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikes
 phil_temp16 <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/Phil_temp_2016.csv")
 
 ### Convert start_time from factor to date
-city_data$start_time <- mdy(city_data$start_time)
+city_data$start_time <- ymd(city_data$start_time)
 member_data$start_time <- mdy(member_data$start_time)
 ```
 
@@ -42,7 +42,7 @@ member_data$start_time <- mdy(member_data$start_time)
 cityplot <- ggplot(data = city_data, aes(x = start_time, y = by100000)) +
   geom_line() +
   stat_smooth(aes(group = dummy), method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
-  geom_vline(xintercept=as.numeric(city_data$start_time[1398]), linetype=4) + 
+  geom_vline(xintercept=as.numeric(city_data$start_time[1215]), linetype=4) + 
   facet_wrap(~ city) + 
   theme_classic()
   
@@ -60,7 +60,7 @@ philly_data <- filter(member_data, city == "Philly")
 philly_member_plot <- ggplot(data = philly_data, aes(x = start_time, y = by10000)) +
   geom_line() +
   stat_smooth(aes(group = dummy), method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
-  geom_vline(xintercept=as.numeric(city_data$start_time[1398]), linetype=4) + 
+  geom_vline(xintercept=as.numeric(city_data$start_time[1215]), linetype=4) + 
   facet_wrap(~ membertype) + 
   theme_classic()
   
@@ -75,7 +75,7 @@ boston_data <- filter(member_data, city == "Boston")
 boston_member_plot <- ggplot(data = boston_data, aes(x = start_time, y = by10000)) +
   geom_line() +
   stat_smooth(aes(group = dummy), method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
-  geom_vline(xintercept=as.numeric(city_data$start_time[1398]), linetype=4) + 
+  geom_vline(xintercept=as.numeric(city_data$start_time[1215]), linetype=4) + 
   facet_wrap(~ membertype) + 
   theme_classic()
   
@@ -90,7 +90,7 @@ chicago_data <- filter(member_data, city == "Chicago")
 chicago_member_plot <- ggplot(data = chicago_data, aes(x = start_time, y = by10000)) +
   geom_line() +
   stat_smooth(aes(group = dummy), method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
-  geom_vline(xintercept=as.numeric(city_data$start_time[1398]), linetype=4) + 
+  geom_vline(xintercept=as.numeric(city_data$start_time[1215]), linetype=4) + 
   facet_wrap(~ membertype) + 
   theme_classic()
   
@@ -100,20 +100,20 @@ plot(chicago_member_plot)
 #### Washington
 
 ```{r}
-Washington_data <- filter(member_data, city == "Washington")
+washington_data <- filter(member_data, city == "Washington")
 
-washington_member_plot <- ggplot(data = Washington_data, aes(x = start_time, y = by10000)) +
+washington_member_plot <- ggplot(data = washington_data, aes(x = start_time, y = by10000)) +
   geom_line() +
   stat_smooth(aes(group = dummy), method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
-  geom_vline(xintercept=as.numeric(city_data$start_time[1398]), linetype=4) + 
+  geom_vline(xintercept=as.numeric(city_data$start_time[1215]), linetype=4) + 
   facet_wrap(~ membertype) + 
   theme_classic()
   
 plot(washington_member_plot)
 ```
 
-###3. Data analysis
-###3.1 Linear Model
+### Data analysis
+#### Linear Model
 
 ```{r}
 lm2citycoll <- lm(number_trips ~ start_time + dummy + start_time*dummy, data=city_data)
@@ -129,22 +129,36 @@ lm3by100k <- lm(by100000 ~ start_time + dummy + city + start_time*dummy + city*d
 summary(lm3by100k)
 ```
 
-```
-##Boston Moving Average
+#### Arima Modelling
 
-bostoncoll$Date = as.Date(bostoncoll$start_time)
+```{r}
+city_data <- city_data %>% 
+  arrange(desc(start_time),
+         (desc(city))
+         )
 
-ggplot(bostoncoll, aes(Date, by100000)) +
-  geom_line() +
-  scale_x_date('month') +
-  ylab("Number of Trips") +
-  xlab("")
+city_data <- city_data %>%
+  group_by(city) %>%
+    mutate(
+      cnt_ma7 = rollmean(by100000, k = 7, fill = by100000),
+      cnt_ma30 = rollmean(by100000, k = 30, fill = by100000)
+    )
 
-##Data clean, smoothing outliers
+smooth_plot <- ggplot(city_data) +
+  geom_line(aes(x = start_time, y = by100000, colour = "Count")) +
+  geom_line(aes(x = start_time, y = cnt_ma7, colour = "Weekly Moving Average")) +
+  geom_line(aes(x = start_time, y = cnt_ma30, colour = "Monthly Moving Average")) +
+  geom_vline(xintercept=as.numeric(city_data$start_time[1215]), linetype=4) + 
+  facet_wrap(~ city) + 
+  theme_classic() +
+  ylab('Number of Trips x 100000 person') 
+plot(smooth_plot)
 
-bostoncount_ts = ts(bostoncoll[, c('by100000')])
 
-bostoncoll$clean_cnt = tsclean(as.vector(bostoncount_ts))
+      bostoncoll$clean_cnt = tsclean(as.vector(bostoncount_ts))
+      bostoncoll$cnt_ma = ma(bostoncoll$clean_cnt, order=7) 
+      bostoncoll$cnt_ma30 = ma(bostoncoll$clean_cnt, order=30)
+
 
 ggplot() +
   geom_line(data = bostoncoll, aes(x = Date, y = clean_cnt)) +
@@ -152,9 +166,7 @@ ggplot() +
 
 #using the clean count with no outliers
 
-bostoncoll$cnt_ma = ma(bostoncoll$clean_cnt, order=7) 
 
-bostoncoll$cnt_ma30 = ma(bostoncoll$clean_cnt, order=30)
 
 ggplot() +
   geom_line(data = bostoncoll, aes(x = Date, y = clean_cnt, colour = "Counts")) +
@@ -162,101 +174,11 @@ ggplot() +
   geom_line(data = bostoncoll, aes(x = Date, y = cnt_ma30, colour = "Monthly Moving Average"))  +
   ylab('Number of Trips x 100000 person')
 
-##Chicago Moving Average
 
-chicagocoll$Date = as.Date(chicagocoll$start_time)
 
-ggplot(chicagocoll, aes(Date, by100000)) +
-  geom_line() +
-  scale_x_date('month') +
-  ylab("Number of Trips") +
-  xlab("")
 
-##Data clean, smoothing outliers
+```
 
-chicagocount_ts = ts(chicagocoll[, c('by100000')])
-
-chicagocoll$clean_cnt = tsclean(as.vector(chicagocount_ts))
-
-ggplot() +
-  geom_line(data = chicagocoll, aes(x = Date, y = clean_cnt)) +
-  ylab('Cleaned Number of Trips')
-
-#using the clean count with no outliers
-
-chicagocoll$cnt_ma = ma(chicagocoll$clean_cnt, order=7) 
-
-chicagocoll$cnt_ma30 = ma(chicagocoll$clean_cnt, order=30)
-
-ggplot() +
-  geom_line(data = chicagocoll, aes(x = Date, y = clean_cnt, colour = "Counts")) +
-  geom_line(data = chicagocoll, aes(x = Date, y = cnt_ma,   colour = "Weekly Moving Average"))  +
-  geom_line(data = chicagocoll, aes(x = Date, y = cnt_ma30, colour = "Monthly Moving Average"))  +
-  ylab('Number of Trips x 100000 person')
-
-##Washington moving average
-
-washingtoncoll$Date = as.Date(washingtoncoll$start_time)
-
-ggplot(washingtoncoll, aes(Date, by100000)) +
-  geom_line() +
-  scale_x_date('month') +
-  ylab("Number of Trips") +
-  xlab("")
-
-##Data clean, smoothing outliers
-
-washcount_ts = ts(washingtoncoll[, c('by100000')])
-
-washingtoncoll$clean_cnt = tsclean(as.vector(washcount_ts))
-
-ggplot() +
-  geom_line(data = washingtoncoll, aes(x = Date, y = clean_cnt)) +
-  ylab('Cleaned Number of Trips')
-
-#using the clean count with no outliers
-
-washingtoncoll$cnt_ma = ma(washingtoncoll$clean_cnt, order=7) 
-
-washingtoncoll$cnt_ma30 = ma(washingtoncoll$clean_cnt, order=30)
-
-ggplot() +
-  geom_line(data = washingtoncoll, aes(x = Date, y = clean_cnt, colour = "Counts")) +
-  geom_line(data = washingtoncoll, aes(x = Date, y = cnt_ma,   colour = "Weekly Moving Average"))  +
-  geom_line(data = washingtoncoll, aes(x = Date, y = cnt_ma30, colour = "Monthly Moving Average"))  +
-  ylab('Number of Trips x 100000 person')
-
-##Philly Moving Average
-
-phillycoll$Date = as.Date(phillycoll$start_time)
-
-ggplot(phillycoll, aes(Date, by100000)) +
-  geom_line() +
-  scale_x_date('month') +
-  ylab("Number of Trips") +
-  xlab("")
-
-##Data clean, smoothing outliers
-
-phillycount_ts = ts(phillycoll[, c('by100000')])
-
-phillycoll$clean_cnt = tsclean(as.vector(phillycount_ts))
-
-ggplot() +
-  geom_line(data = phillycoll, aes(x = Date, y = clean_cnt)) +
-  ylab('Cleaned Number of Trips')
-
-#using the clean count with no outliers
-
-phillycoll$cnt_ma = ma(phillycoll$clean_cnt, order=7) 
-
-phillycoll$cnt_ma30 = ma(phillycoll$clean_cnt, order=30)
-
-ggplot() +
-  geom_line(data = phillycoll, aes(x = Date, y = clean_cnt, colour = "Counts")) +
-  geom_line(data = phillycoll, aes(x = Date, y = cnt_ma,   colour = "Weekly Moving Average"))  +
-  geom_line(data = phillycoll, aes(x = Date, y = cnt_ma30, colour = "Monthly Moving Average"))  +
-  ylab('Number of Trips x 100000 person')
 
 ##Decompose data
 
@@ -315,14 +237,12 @@ fit_w_seasonality
 seas_fcast <- forecast(fit_w_seasonality, h=30)
 plot(seas_fcast)
 ```
-##Philly CausalImpact---------------------
+
+## Philly CausalImpact
+
 ```{r}
-Phil_dat <- filter(final_data, city=="Philly")
-##Add records for the missing two days
-Phil_dat[365, "start_time"] <- "2016-01-23"
-Phil_dat[366, "start_time"] <- "2016-01-24"
 ##Arrange the data based on time
-Phil_dat <- arrange(Phil_dat,start_time)
+philly_data <- arrange(philly_data, start_time)
 
 ##Set pre- and post-periods
 pre.period <- as.Date(c("2016-01-01", "2016-10-31"))
@@ -330,9 +250,9 @@ post.period <- as.Date(c("2016-11-01", "2016-12-31"))
 post.period2 <- as.Date(c("2016-11-01", "2016-11-07")) ##Assess the impact one week after the strike
 
 ##Modelling all Phil data
-Phil_dat$start_time <- as.Date(Phil_dat$start_time)
+philly_data$start_time <- as.Date(philly_data$start_time)
 
-data <- zoo(cbind(Phil_dat$by100000, avgTemp_16$MEAN), as.Date(Phil_dat$start_time))
+data <- zoo(cbind(philly_data$by100000, avgTemp_16$MEAN), as.Date(philly_data$start_time))
 
 ##Modelling without covaraites
 impact_phil <- CausalImpact(data = data[,1], pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7))
@@ -364,7 +284,8 @@ data_mem <- zoo(cbind(phil_bs_mem$by10000), phil_bs_mem$start_time)
 
 impact_pil_mem <- CausalImpact(data = data_mem, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7))
 ```
-##Boston data analysis----------------------------
+
+## Boston data analysis
 ```{r}
 Boston_dat <- filter(final_data, city=="Boston")
 Boston_dat$start_time <- as.Date(Boston_dat$start_time)
@@ -375,7 +296,8 @@ impact_bos <- CausalImpact(data = data_bos, pre.period = pre.period, post.period
 
 plot(impact_bos)
 ```
-##Chicago data anlysis ---------------------------
+
+## Chicago data anlysis 
 ```{r}
 Chicago_dat <- filter(final_data, city=="Chicago")
 Chicago_dat$start_time <- as.Date(Chicago_dat$start_time)
@@ -386,13 +308,9 @@ impact_chi <- CausalImpact(data = data_chi, pre.period = pre.period, post.period
 
 plot(impact_chi)  ##Not a good fit to the data
 ```
-##Washington data anlysis ---------------------------
+## Washington data anlysis 
 ```{r}
 DC_dat <- filter(final_data, city=="Washington")  ##Missing four days' data
-DC_dat[363, "start_time"] <- "2016-01-23"
-DC_dat[364, "start_time"] <- "2016-01-24"
-DC_dat[365, "start_time"] <- "2016-01-25"
-DC_dat[366, "start_time"] <- "2016-01-26"
 
 DC_dat$start_time <- as.Date(DC_dat$start_time)
 DC_dat <- arrange(DC_dat, start_time)
