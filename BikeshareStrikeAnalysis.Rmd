@@ -65,7 +65,7 @@ member_data <- member_data %>%
 cityplot <- ggplot(data = city_data, aes(x = start_time, y = by100000)) +
   geom_line() +
   stat_smooth(aes(group = dummy), method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
-  geom_vline(xintercept=as.numeric(city_data$start_time[1215]), linetype=4) + 
+  geom_vline(xintercept=as.numeric(city_data$start_time[""]), linetype=4) + 
   facet_wrap(~ city) + 
   theme_classic()
   
@@ -263,6 +263,7 @@ plot(impact_bos)
 chicago_data <- zoo(cbind(chicago_data$by100000), as.Date(chicago_data$start_time))
 
 impact_chi <- CausalImpact(data = chicago_data, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
+summary(impact_chi)
 
 plot(impact_chi)  ##Not a good fit to the data
 ```
@@ -272,6 +273,7 @@ plot(impact_chi)  ##Not a good fit to the data
 washington_data <- zoo(cbind(washington_data$by100000), as.Date(washington_data$start_time))
 
 impact_DC <- CausalImpact(data = washington_data, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000,nseasons=7))
+summary(impact_DC)
 
 plot(impact_DC)  ##Not a good fit to the data
 ```
