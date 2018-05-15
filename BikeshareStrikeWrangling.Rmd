@@ -134,6 +134,10 @@ phillyClean$start_time <- mdy(phillyClean$start_time)
 phillyClean$end_time <- gsub(" .*", "", phillyClean$end_time)
 phillyClean$end_time <- mdy(phillyClean$end_time)
 
+##Add records for the missing two days
+phillyClean[365, "start_time"] <- "2016-01-23"
+phillyClean[366, "start_time"] <- "2016-01-24"
+
 head(phillyClean)
 ```
 
@@ -160,6 +164,12 @@ washingtonClean$start_time <- mdy(washingtonClean$start_time)
 ## Clean End Time
 washingtonClean$end_time <- gsub(" .*", "", washingtonClean$end_time)
 washingtonClean$end_time <- mdy(washingtonClean$end_time)
+
+## Fill in Missing Days for Washington
+washingtonClean[363, "start_time"] <- "2016-01-23"
+washingtonClean[364, "start_time"] <- "2016-01-24"
+washingtonClean[365, "start_time"] <- "2016-01-25"
+washingtonClean[366, "start_time"] <- "2016-01-26"
 
 head(washingtonClean)
 ```
