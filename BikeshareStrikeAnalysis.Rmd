@@ -28,10 +28,41 @@ city_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikesh
 member_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/MemberColl.csv")
 final_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/city_day_sum.csv")
 phil_temp16 <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/Phil_temp_2016.csv")
+```
 
-### Convert start_time from factor to date
+### Convert start_time from factor to date and creating moving averages
+```{r}
 city_data$start_time <- ymd(city_data$start_time)
 member_data$start_time <- mdy(member_data$start_time)
+
+city_data <- city_data %>% 
+  arrange(desc(start_time),
+         (desc(city))
+         )
+
+city_data <- city_data %>%
+  group_by(city) %>%
+    mutate(
+      cnt_ma7 = rollmean(by100000, k = 7, fill = by100000),
+      cnt_ma30 = rollmean(by100000, k = 30, fill = by100000),
+      cnt_ma = rollmean(cnt_ma7, k = 30, fill = by100000)
+    )
+
+city_data <- city_data %>%
+  group_by(city) %>%
+    mutate(
+      cnt_ma7 = rollmean(by100000, k = 7, fill = by100000),
+      cnt_ma30 = rollmean(by100000, k = 30, fill = by100000),
+      cnt_ma = rollmean(cnt_ma7, k = 30, fill = by100000)
+    )
+
+member_data <- member_data %>%
+  group_by(city, membertype) %>%
+    mutate(
+      cnt_ma7 = rollmean(by10000, k = 7, fill = by10000),
+      cnt_ma30 = rollmean(by10000, k = 30, fill = by10000),
+      cnt_ma = rollmean(cnt_ma7, k = 30, fill = by10000)
+    )
 ```
 
 ### Time Series Plot 
@@ -113,37 +144,10 @@ plot(washington_member_plot)
 ```
 
 ### Data analysis
-#### Linear Model
+
+#### Moving Averages
 
 ```{r}
-lm2citycoll <- lm(number_trips ~ start_time + dummy + start_time*dummy, data=city_data)
-summary(lm2citycoll)
-
-lm3citycoll <- lm(number_trips ~ start_time + dummy + city + start_time*dummy + city*dummy, data=city_data)
-summary(lm3citycoll)
-
-lm2by100k <- lm(by100000 ~ start_time + dummy + start_time*dummy, data=city_data)
-summary(lm2by100k)
-
-lm3by100k <- lm(by100000 ~ start_time + dummy + city + start_time*dummy + city*dummy, data=city_data)
-summary(lm3by100k)
-```
-
-#### Arima Modelling
-
-```{r}
-city_data <- city_data %>% 
-  arrange(desc(start_time),
-         (desc(city))
-         )
-
-city_data <- city_data %>%
-  group_by(city) %>%
-    mutate(
-      cnt_ma7 = rollmean(by100000, k = 7, fill = by100000),
-      cnt_ma30 = rollmean(by100000, k = 30, fill = by100000)
-    )
-
 smooth_plot <- ggplot(city_data) +
   geom_line(aes(x = start_time, y = by100000, colour = "Count")) +
   geom_line(aes(x = start_time, y = cnt_ma7, colour = "Weekly Moving Average")) +
@@ -153,89 +157,40 @@ smooth_plot <- ggplot(city_data) +
   theme_classic() +
   ylab('Number of Trips x 100000 person') 
 plot(smooth_plot)
-
-
-      bostoncoll$clean_cnt = tsclean(as.vector(bostoncount_ts))
-      bostoncoll$cnt_ma = ma(bostoncoll$clean_cnt, order=7) 
-      bostoncoll$cnt_ma30 = ma(bostoncoll$clean_cnt, order=30)
-
-
-ggplot() +
-  geom_line(data = bostoncoll, aes(x = Date, y = clean_cnt)) +
-  ylab('Cleaned Number of Trips')
-
-#using the clean count with no outliers
-
-
-
-ggplot() +
-  geom_line(data = bostoncoll, aes(x = Date, y = clean_cnt, colour = "Counts")) +
-  geom_line(data = bostoncoll, aes(x = Date, y = cnt_ma,   colour = "Weekly Moving Average"))  +
-  geom_line(data = bostoncoll, aes(x = Date, y = cnt_ma30, colour = "Monthly Moving Average"))  +
-  ylab('Number of Trips x 100000 person')
-
-
-
-
 ```
 
+#### Linear Model on Total Number of Trips With Weekly and Seasonal Moving Average
 
-##Decompose data
+```{r}
+lm_city_cnt <- lm(number_trips ~ cnt_ma*dummy*city, data = city_data)
+summary(lm_city_cnt)
+city_data$lm_cnt_fitted <- lm_city_cnt$fitted.values
 
-count_ma = ts(na.omit(bostoncoll$cnt_ma), frequency=30)
-decomp = stl(count_ma, s.window="periodic")
-deseasonal_cnt <- seasadj(decomp)
-plot(decomp)
+lm_plot_cnt <- ggplot(city_data) +
+  geom_line(aes(x = start_time, y = number_trips, colour = "Count")) +
+  geom_line(aes(x = start_time, y = lm_cnt_fitted, colour = "Linear Model with moving averages")) +
+  geom_vline(xintercept=as.numeric(city_data$start_time[1215]), linetype=4) + 
+  facet_wrap(~ city) + 
+  theme_classic() +
+  ylab('Number of Trips') 
+plot(lm_plot_cnt)
+```
 
-##Dickey Fuller Test
+#### Linear Model on Trips per 100k people With Weekly and Seasonal Moving Average
 
-adf.test(count_ma, alternative = "stationary")
+```{r}
+lm_city_100k <- lm(by100000 ~ cnt_ma*dummy*city, data = city_data)
+summary(lm_city_100k)
+city_data$lm_100k_fitted <- lm_city_100k$fitted.values
 
-## Auto-correlation plots
-
-Acf(count_ma, main='')
-
-Pacf(count_ma, main='')
-
-count_d1 = diff(deseasonal_cnt, differences = 1)
-plot(count_d1)
-adf.test(count_d1, alternative = "stationary")
-
-Acf(count_d1, main='ACF for Differenced Series')
-
-Pacf(count_d1, main='PACF for Differenced Series')
-
-##ARIMA test
-
-auto.arima(deseasonal_cnt, seasonal=FALSE)
-
-fit<-auto.arima(deseasonal_cnt, seasonal=FALSE)
-
-par(mar = rep(2, 4))
-
-tsdisplay(residuals(fit), lag.max=45, main='(1,1,1) Model Residuals')
-
-fit2 = arima(deseasonal_cnt, order=c(1,1,7))
-
-fit2
-
-tsdisplay(residuals(fit2), lag.max=15, main='Seasonal Model Residuals')
-
-fcast <- forecast(fit2, h=30)
-plot(fcast)
-
-hold <- window(ts(deseasonal_cnt), start=200)
-
-fit_no_holdout = arima(ts(deseasonal_cnt[-c(200:725)]), order=c(1,1,7))
-
-fcast_no_holdout <- forecast(fit_no_holdout,h=170)
-plot(fcast_no_holdout, main=" ")
-lines(ts(deseasonal_cnt))
-
-fit_w_seasonality = auto.arima(deseasonal_cnt, seasonal=TRUE)
-fit_w_seasonality
-seas_fcast <- forecast(fit_w_seasonality, h=30)
-plot(seas_fcast)
+lm_plot_100k <- ggplot(city_data) +
+  geom_line(aes(x = start_time, y = by100000, colour = "Count")) +
+  geom_line(aes(x = start_time, y = lm_100k_fitted, colour = "Linear Model with moving averages")) +
+  geom_vline(xintercept=as.numeric(city_data$start_time[1215]), linetype=4) + 
+  facet_wrap(~ city) + 
+  theme_classic() +
+  ylab('Number of Trips x 100000 person') 
+plot(lm_plot_100k)
 ```
 
 ## Philly CausalImpact
