@@ -26,7 +26,6 @@ opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
 ```{r}
 city_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/city_day_sum.csv")
 member_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/MemberColl.csv")
-phil_temp16 <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/Phil_temp_2016.csv")
 ```
 
 ### Convert start_time from factor to date and creating moving averages
@@ -154,7 +153,7 @@ plot(smooth_plot)
 #### Linear Model on Total Number of Trips With Weekly and Seasonal Moving Average
 
 ```{r}
-lm_city_cnt <- lm(number_trips ~ cnt_ma*dummy*city, data = city_data)
+lm_city_cnt <- lm(number_trips ~ cnt_ma7*dummy*city, data = city_data)
 summary(lm_city_cnt)
 city_data$lm_cnt_fitted <- lm_city_cnt$fitted.values
 
@@ -171,7 +170,7 @@ plot(lm_plot_cnt)
 #### Linear Model on Trips per 100k people With Weekly and Seasonal Moving Average
 
 ```{r}
-lm_city_100k <- lm(by100000 ~ cnt_ma*dummy*city, data = city_data)
+lm_city_100k <- lm(by100000 ~ cnt_ma7*dummy*city, data = city_data)
 summary(lm_city_100k)
 city_data$lm_100k_fitted <- lm_city_100k$fitted.values
 

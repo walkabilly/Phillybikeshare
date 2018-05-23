@@ -230,6 +230,11 @@ city_day_sum$by100000 <-
         ifelse(city_day_sum$city == "Chicago", city_day_sum$number_trips/26.95598, .) %>%
         ifelse(city_day_sum$city == "Boston", city_day_sum$number_trips/6.67137, .) 
 
+### Add weather data
+phil_temp16 <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/Phil_temp_2016.csv")
+
+city_day_sum1 <- if_else(city_day_sum$city == "Philly", cbind(city_day_sum, phil_temp16), 1)
+
 city_day_sum <- arrange(city_day_sum, start_time)
 
 write.csv(city_day_sum, "city_day_sum.csv")
