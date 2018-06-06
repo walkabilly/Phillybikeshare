@@ -26,6 +26,7 @@ opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
 ```{r}
 city_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/city_day_sum.csv")
 member_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/MemberColl.csv")
+philly_weather <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/Phil_temp_2016.csv")
 ```
 
 ### Convert start_time from factor to date and creating moving averages
@@ -149,6 +150,21 @@ smooth_plot <- ggplot(city_data) +
   ylab('Number of Trips x 100000 person') 
 plot(smooth_plot)
 ```
+
+
+### Linear Model on Trips per 100K people
+### Covaraites: (1) daily average temperature; (2) daily average precipitation; (3) dummy varaible: 0 - no strike, 1 - strike; (4) Trips per 100K, Boston; (5) Trips per 100K, Washington DC; (6) Trips per 100K, Chicago; (7) time; (8) Interaction between time and dummy
+
+```{r}
+library(dplyr)
+trip_Philly <- dplyr::select(filter(city_data,city=="Philly"),by100000,dummy)
+trip_Boston <- dplyr::select(filter(city_data,city=="Boston"),by100000)
+trip_Washington <- dplyr::select(filter(city_data,city=="Washington"),by100000)
+
+lm_tripRate <- 
+```
+
+
 
 #### Linear Model on Total Number of Trips With Weekly and Seasonal Moving Average
 
