@@ -15,24 +15,44 @@ library(tidyverse)
 ```
 
 ```
-## ── Attaching packages ────────────────────────────────────────────────────────────────────────────────────────────── tidyverse 1.2.1 ──
+## Warning: package 'tidyverse' was built under R version 3.4.4
 ```
 
 ```
-## ✔ ggplot2 2.2.1     ✔ readr   1.1.1
-## ✔ tibble  1.4.2     ✔ purrr   0.2.4
-## ✔ tidyr   0.8.0     ✔ dplyr   0.7.4
-## ✔ ggplot2 2.2.1     ✔ forcats 0.3.0
+## -- Attaching packages ---------------------------------- tidyverse 1.2.1 --
 ```
 
 ```
-## ── Conflicts ───────────────────────────────────────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
-## ✖ dplyr::filter() masks stats::filter()
-## ✖ dplyr::lag()    masks stats::lag()
+## v ggplot2 2.2.1     v readr   1.1.1
+## v tibble  1.4.2     v purrr   0.2.4
+## v tidyr   0.8.0     v dplyr   0.7.4
+## v ggplot2 2.2.1     v forcats 0.3.0
+```
+
+```
+## Warning: package 'tidyr' was built under R version 3.4.4
+```
+
+```
+## Warning: package 'purrr' was built under R version 3.4.4
+```
+
+```
+## Warning: package 'forcats' was built under R version 3.4.4
+```
+
+```
+## -- Conflicts ------------------------------------- tidyverse_conflicts() --
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()
 ```
 
 ```r
 library(lubridate)
+```
+
+```
+## Warning: package 'lubridate' was built under R version 3.4.4
 ```
 
 ```
@@ -49,9 +69,34 @@ library(lubridate)
 ```r
 library(ggplot2)
 library(forecast)
+```
+
+```
+## Warning: package 'forecast' was built under R version 3.4.4
+```
+
+```r
 library(tseries)
+```
+
+```
+## Warning: package 'tseries' was built under R version 3.4.4
+```
+
+```r
 library(formatR)
+```
+
+```
+## Warning: package 'formatR' was built under R version 3.4.4
+```
+
+```r
 library(CausalImpact)
+```
+
+```
+## Warning: package 'CausalImpact' was built under R version 3.4.4
 ```
 
 ```
@@ -59,11 +104,23 @@ library(CausalImpact)
 ```
 
 ```
+## Warning: package 'bsts' was built under R version 3.4.4
+```
+
+```
 ## Loading required package: BoomSpikeSlab
 ```
 
 ```
+## Warning: package 'BoomSpikeSlab' was built under R version 3.4.4
+```
+
+```
 ## Loading required package: Boom
+```
+
+```
+## Warning: package 'Boom' was built under R version 3.4.4
 ```
 
 ```
@@ -97,6 +154,10 @@ library(CausalImpact)
 ```
 
 ```
+## Warning: package 'zoo' was built under R version 3.4.4
+```
+
+```
 ## 
 ## Attaching package: 'zoo'
 ```
@@ -112,6 +173,10 @@ library(CausalImpact)
 ```
 
 ```
+## Warning: package 'xts' was built under R version 3.4.4
+```
+
+```
 ## 
 ## Attaching package: 'xts'
 ```
@@ -124,7 +189,28 @@ library(CausalImpact)
 
 ```r
 library(zoo)
+library(normtest)
+library(car)
+```
 
+```
+## 
+## Attaching package: 'car'
+```
+
+```
+## The following object is masked from 'package:dplyr':
+## 
+##     recode
+```
+
+```
+## The following object is masked from 'package:purrr':
+## 
+##     some
+```
+
+```r
 options(scipen = 2, digits=4)
 opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
 ```
@@ -173,7 +259,7 @@ member_data <- member_data %>%
 ```r
 cityplot <- ggplot(data = city_data, aes(x = start_time, y = by100000)) + geom_line() + 
     stat_smooth(aes(group = dummy), method = "lm", formula = y ~ poly(x, 2), 
-        se = FALSE) + geom_vline(xintercept = as.numeric(city_data$start_time[1215]), 
+        se = FALSE) + geom_vline(xintercept = as.numeric(city_data$start_time[""]), 
     linetype = 4) + facet_wrap(~city) + theme_classic()
 
 
@@ -264,115 +350,241 @@ plot(smooth_plot)
 
 ![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
 
-#### Linear Model on Total Number of Trips With Weekly and Seasonal Moving Average
+
+### Linear Model on Trips per 100K people
+### Covaraites: (1) daily average temperature; (2) daily average precipitation; (3) dummy varaible: 0 - no strike, 1 - strike; (4) Trips per 100K, Boston; (5) Trips per 100K, Washington DC; (6) Trips per 100K, Chicago; (7) time; (8) Interaction between time and dummy
 
 
 ```r
-lm_city_cnt <- lm(number_trips ~ cnt_ma * dummy * city, data = city_data)
-summary(lm_city_cnt)
+trip_Philly <- arrange(dplyr::select(filter(city_data, city == "Philly"), by100000, 
+    dummy, start_time), start_time)
+trip_Boston <- arrange(dplyr::select(filter(city_data, city == "Boston"), by100000, 
+    start_time), start_time)
+trip_Washington <- arrange(dplyr::select(filter(city_data, city == "Washington"), 
+    by100000, start_time), start_time)
+trip_Chicago <- arrange(dplyr::select(filter(city_data, city == "Chicago"), 
+    by100000, start_time), start_time)
+
+time <- 1:366
+
+lm_tripRate <- lm(trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+    trip_Philly$dummy + trip_Boston$by100000 + trip_Washington$by100000 + trip_Chicago$by100000 + 
+    time + time * trip_Philly$dummy)
+
+summary(lm_tripRate)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = number_trips ~ cnt_ma * dummy * city, data = city_data)
+## lm(formula = trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+##     trip_Philly$dummy + trip_Boston$by100000 + trip_Washington$by100000 + 
+##     trip_Chicago$by100000 + time + time * trip_Philly$dummy)
 ## 
 ## Residuals:
 ##    Min     1Q Median     3Q    Max 
-##  -7656   -582    104    802   8232 
+## -77.41  -8.01   0.53   8.21  76.36 
 ## 
 ## Coefficients:
-##                             Estimate Std. Error t value  Pr(>|t|)    
-## (Intercept)                  -62.019    190.165   -0.33      0.74    
-## cnt_ma                         6.767      0.308   21.99   < 2e-16 ***
-## dummy                        314.725    476.168    0.66      0.51    
-## cityChicago                  -78.016    293.935   -0.27      0.79    
-## cityPhilly                    71.606    306.398    0.23      0.82    
-## cityWashington               238.906    383.803    0.62      0.53    
-## cnt_ma:dummy                  -0.434      1.184   -0.37      0.71    
-## cnt_ma:cityChicago            20.507      0.598   34.29   < 2e-16 ***
-## cnt_ma:cityPhilly              8.720      1.929    4.52 0.0000067 ***
-## cnt_ma:cityWashington         -0.143      0.382   -0.37      0.71    
-## dummy:cityChicago           -646.748    689.523   -0.94      0.35    
-## dummy:cityPhilly            -468.626    751.135   -0.62      0.53    
-## dummy:cityWashington         569.724    848.917    0.67      0.50    
-## cnt_ma:dummy:cityChicago       2.984      2.358    1.27      0.21    
-## cnt_ma:dummy:cityPhilly        3.170      5.314    0.60      0.55    
-## cnt_ma:dummy:cityWashington   -0.222      1.339   -0.17      0.87    
+##                           Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)               -3.20514    4.10611   -0.78    0.436    
+## phil_temp16$MEAN          -0.20528    0.10243   -2.00    0.046 *  
+## phil_temp16$PRCP          -4.91943    2.04840   -2.40    0.017 *  
+## trip_Philly$dummy        439.49308   44.39220    9.90   <2e-16 ***
+## trip_Boston$by100000       0.07404    0.00609   12.16   <2e-16 ***
+## trip_Washington$by100000   0.04966    0.00291   17.04   <2e-16 ***
+## trip_Chicago$by100000      0.01614    0.00875    1.85    0.066 .  
+## time                       0.10021    0.01768    5.67    3e-08 ***
+## trip_Philly$dummy:time    -1.29009    0.13678   -9.43   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 1630 on 1448 degrees of freedom
-## Multiple R-squared:  0.892,	Adjusted R-squared:  0.891 
-## F-statistic:  799 on 15 and 1448 DF,  p-value: <2e-16
+## Residual standard error: 16.3 on 357 degrees of freedom
+## Multiple R-squared:  0.919,	Adjusted R-squared:  0.917 
+## F-statistic:  504 on 8 and 357 DF,  p-value: <2e-16
 ```
 
 ```r
-city_data$lm_cnt_fitted <- lm_city_cnt$fitted.values
+tripPhilly_fitted <- lm_tripRate$fitted.values
+lm_plot_tripRate <- ggplot(trip_Philly) + geom_line(aes(x = start_time, y = by100000)) + 
+    geom_line(aes(x = start_time, y = tripPhilly_fitted, colour = "#339999")) + 
+    theme_classic() + ylab("Trips per 100K people")
 
-lm_plot_cnt <- ggplot(city_data) + geom_line(aes(x = start_time, y = number_trips, 
-    colour = "Count")) + geom_line(aes(x = start_time, y = lm_cnt_fitted, colour = "Linear Model with moving averages")) + 
-    geom_vline(xintercept = as.numeric(city_data$start_time[1215]), linetype = 4) + 
-    facet_wrap(~city) + theme_classic() + ylab("Number of Trips")
-plot(lm_plot_cnt)
+plot(lm_plot_tripRate)
 ```
 
 ![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-10-1.png)<!-- -->
 
-#### Linear Model on Trips per 100k people With Weekly and Seasonal Moving Average
-
-
 ```r
-lm_city_100k <- lm(by100000 ~ cnt_ma * dummy * city, data = city_data)
-summary(lm_city_100k)
+### Accounting for the potential quadratic trend of the data (time squared).
+### This term captures the curvature of the trend
+lm_tripRate2 <- lm(trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+    trip_Philly$dummy + trip_Boston$by100000 + trip_Washington$by100000 + trip_Chicago$by100000 + 
+    poly(time, 2) + time * trip_Philly$dummy)  ##Code for time squared interaction is I(time^2)*trip_Philly$dummy
+
+summary(lm_tripRate2)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = by100000 ~ cnt_ma * dummy * city, data = city_data)
+## lm(formula = trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+##     trip_Philly$dummy + trip_Boston$by100000 + trip_Washington$by100000 + 
+##     trip_Chicago$by100000 + poly(time, 2) + time * trip_Philly$dummy)
 ## 
 ## Residuals:
-##     Min      1Q  Median      3Q     Max 
-## -1070.5   -46.5     9.0    68.7   717.7 
+##    Min     1Q Median     3Q    Max 
+## -78.66  -7.82   0.34   7.29  70.53 
 ## 
-## Coefficients:
-##                              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)                  -9.29636   19.86967   -0.47     0.64    
-## cnt_ma                        1.01433    0.03216   31.54   <2e-16 ***
-## dummy                        47.17542   49.75299    0.95     0.34    
-## cityChicago                   4.10139   30.71217    0.13     0.89    
-## cityPhilly                    9.90779   32.01435    0.31     0.76    
-## cityWashington               35.60990   40.10212    0.89     0.37    
-## cnt_ma:dummy                 -0.06502    0.12369   -0.53     0.60    
-## cnt_ma:cityChicago           -0.00252    0.06248   -0.04     0.97    
-## cnt_ma:cityPhilly            -0.02656    0.20156   -0.13     0.90    
-## cnt_ma:cityWashington        -0.02889    0.03994   -0.72     0.47    
-## dummy:cityChicago           -59.49266   72.04566   -0.83     0.41    
-## dummy:cityPhilly            -56.99137   78.48329   -0.73     0.47    
-## dummy:cityWashington         84.39437   88.70014    0.95     0.34    
-## cnt_ma:dummy:cityChicago      0.15965    0.24642    0.65     0.52    
-## cnt_ma:dummy:cityPhilly       0.23955    0.55520    0.43     0.67    
-## cnt_ma:dummy:cityWashington  -0.03248    0.13994   -0.23     0.82    
+## Coefficients: (1 not defined because of singularities)
+##                           Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)               -8.57152    6.06254   -1.41   0.1583    
+## phil_temp16$MEAN           0.02138    0.10284    0.21   0.8354    
+## phil_temp16$PRCP          -3.99459    1.94240   -2.06   0.0405 *  
+## trip_Philly$dummy        461.15602   42.11353   10.95  < 2e-16 ***
+## trip_Boston$by100000       0.08240    0.00590   13.98  < 2e-16 ***
+## trip_Washington$by100000   0.05203    0.00278   18.72  < 2e-16 ***
+## trip_Chicago$by100000      0.02750    0.00845    3.25   0.0012 ** 
+## poly(time, 2)1           177.13589   34.02814    5.21  3.3e-07 ***
+## poly(time, 2)2           231.82291   35.30061    6.57  1.8e-10 ***
+## time                            NA         NA      NA       NA    
+## trip_Philly$dummy:time    -1.37708    0.13004  -10.59  < 2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 171 on 1448 degrees of freedom
-## Multiple R-squared:  0.91,	Adjusted R-squared:  0.909 
-## F-statistic:  980 on 15 and 1448 DF,  p-value: <2e-16
+## Residual standard error: 15.4 on 356 degrees of freedom
+## Multiple R-squared:  0.927,	Adjusted R-squared:  0.926 
+## F-statistic:  506 on 9 and 356 DF,  p-value: <2e-16
 ```
 
 ```r
-city_data$lm_100k_fitted <- lm_city_100k$fitted.values
+tripPhilly_fitted2 <- lm_tripRate2$fitted.values
+lm_plot_tripRate2 <- ggplot(trip_Philly) + geom_line(aes(x = start_time, y = by100000)) + 
+    geom_line(aes(x = start_time, y = tripPhilly_fitted2, colour = "#339999")) + 
+    theme_classic() + ylab("Trips per 100K people")
 
-lm_plot_100k <- ggplot(city_data) + geom_line(aes(x = start_time, y = by100000, 
-    colour = "Count")) + geom_line(aes(x = start_time, y = lm_100k_fitted, colour = "Linear Model with moving averages")) + 
-    geom_vline(xintercept = as.numeric(city_data$start_time[1215]), linetype = 4) + 
-    facet_wrap(~city) + theme_classic() + ylab("Number of Trips x 100000 person")
-plot(lm_plot_100k)
+plot(lm_plot_tripRate2)
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-10-2.png)<!-- -->
+
+
+###Linear model on Trips per 100K people, weekly moving average
+
+```r
+trip_Philly_MA <- arrange(dplyr::select(filter(city_data, city == "Philly"), 
+    cnt_ma7, dummy, start_time), start_time)
+trip_Boston_MA <- arrange(dplyr::select(filter(city_data, city == "Boston"), 
+    cnt_ma7, start_time), start_time)
+trip_Washington_MA <- arrange(dplyr::select(filter(city_data, city == "Washington"), 
+    cnt_ma7, start_time), start_time)
+trip_Chicago_MA <- arrange(dplyr::select(filter(city_data, city == "Chicago"), 
+    cnt_ma7, start_time), start_time)
+
+time_MA <- 1:366
+
+lm_tripRate_MA <- lm(trip_Philly_MA$cnt_ma7 ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+    trip_Philly_MA$dummy + trip_Boston_MA$cnt_ma7 + trip_Washington_MA$cnt_ma7 + 
+    trip_Chicago_MA$cnt_ma7 + time_MA + time_MA * trip_Philly_MA$dummy)
+
+summary(lm_tripRate_MA)
+```
+
+```
+## 
+## Call:
+## lm(formula = trip_Philly_MA$cnt_ma7 ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+##     trip_Philly_MA$dummy + trip_Boston_MA$cnt_ma7 + trip_Washington_MA$cnt_ma7 + 
+##     trip_Chicago_MA$cnt_ma7 + time_MA + time_MA * trip_Philly_MA$dummy)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -25.38  -5.13  -0.89   4.61  44.54 
+## 
+## Coefficients:
+##                               Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)                    0.47913    2.52384    0.19    0.850    
+## phil_temp16$MEAN              -0.05597    0.06324   -0.89    0.377    
+## phil_temp16$PRCP              -2.06822    1.05994   -1.95    0.052 .  
+## trip_Philly_MA$dummy         494.08561   25.43292   19.43  < 2e-16 ***
+## trip_Boston_MA$cnt_ma7         0.04385    0.00696    6.30  8.7e-10 ***
+## trip_Washington_MA$cnt_ma7     0.03184    0.00239   13.30  < 2e-16 ***
+## trip_Chicago_MA$cnt_ma7        0.06415    0.01004    6.39  5.2e-10 ***
+## time_MA                        0.16211    0.01149   14.11  < 2e-16 ***
+## trip_Philly_MA$dummy:time_MA  -1.49235    0.07944  -18.79  < 2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 8.56 on 357 degrees of freedom
+## Multiple R-squared:  0.972,	Adjusted R-squared:  0.972 
+## F-statistic: 1.56e+03 on 8 and 357 DF,  p-value: <2e-16
+```
+
+```r
+tripPhilly_fitted_MA <- lm_tripRate_MA$fitted.values
+lm_plot_tripRate_MA <- ggplot(trip_Philly_MA) + geom_line(aes(x = start_time, 
+    y = cnt_ma7)) + geom_line(aes(x = start_time, y = tripPhilly_fitted_MA, 
+    colour = "#339999")) + theme_classic() + ylab("Trips per 100K people_Weekly moving average")
+
+plot(lm_plot_tripRate_MA)
 ```
 
 ![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+
+```r
+### Accounting for the potential quadratic trend of the data (time squared).
+### This term captures the curvature of the trend
+lm_tripRate_MA2 <- lm(trip_Philly_MA$cnt_ma7 ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+    trip_Philly_MA$dummy + trip_Boston_MA$cnt_ma7 + trip_Washington_MA$cnt_ma7 + 
+    trip_Chicago_MA$cnt_ma7 + poly(time_MA, 2) + time_MA * trip_Philly_MA$dummy)
+
+summary(lm_tripRate_MA2)
+```
+
+```
+## 
+## Call:
+## lm(formula = trip_Philly_MA$cnt_ma7 ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+##     trip_Philly_MA$dummy + trip_Boston_MA$cnt_ma7 + trip_Washington_MA$cnt_ma7 + 
+##     trip_Chicago_MA$cnt_ma7 + poly(time_MA, 2) + time_MA * trip_Philly_MA$dummy)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -21.00  -3.94   0.19   3.05  41.87 
+## 
+## Coefficients: (1 not defined because of singularities)
+##                               Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)                    2.99580    3.47796    0.86     0.39    
+## phil_temp16$MEAN               0.00815    0.05421    0.15     0.88    
+## phil_temp16$PRCP              -1.03466    0.90822   -1.14     0.26    
+## trip_Philly_MA$dummy         459.81057   21.88761   21.01  < 2e-16 ***
+## trip_Boston_MA$cnt_ma7         0.06572    0.00623   10.55  < 2e-16 ***
+## trip_Washington_MA$cnt_ma7     0.04036    0.00217   18.60  < 2e-16 ***
+## trip_Chicago_MA$cnt_ma7        0.06645    0.00857    7.76  9.2e-14 ***
+## poly(time_MA, 2)1            242.54267   21.11456   11.49  < 2e-16 ***
+## poly(time_MA, 2)2            220.20930   18.95678   11.62  < 2e-16 ***
+## time_MA                             NA         NA      NA       NA    
+## trip_Philly_MA$dummy:time_MA  -1.39225    0.06829  -20.39  < 2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 7.3 on 356 degrees of freedom
+## Multiple R-squared:  0.98,	Adjusted R-squared:  0.979 
+## F-statistic: 1.92e+03 on 9 and 356 DF,  p-value: <2e-16
+```
+
+```r
+tripPhilly_fitted_MA2 <- lm_tripRate_MA2$fitted.values
+lm_plot_tripRate_MA2 <- ggplot(trip_Philly_MA) + geom_line(aes(x = start_time, 
+    y = cnt_ma7)) + geom_line(aes(x = start_time, y = tripPhilly_fitted_MA2, 
+    colour = "#339999")) + theme_classic() + ylab("Trips per 100K people_Weekly moving average")
+
+plot(lm_plot_tripRate_MA2)
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-11-2.png)<!-- -->
+
+
 
 ### Subset to create datasets for each city
 
@@ -408,19 +620,19 @@ summary(impact_phil)
 ```
 ## Posterior inference {CausalImpact}
 ## 
-##                          Average       Cumulative     
-## Actual                   108           6588           
-## Prediction (s.d.)        134 (8.7)     8169 (531.3)   
-## 95% CI                   [117, 151]    [7157, 9231]   
-##                                                       
-## Absolute effect (s.d.)   -26 (8.7)     -1581 (531.3)  
-## 95% CI                   [-43, -9.3]   [-2644, -569.2]
-##                                                       
-## Relative effect (s.d.)   -19% (6.5%)   -19% (6.5%)    
-## 95% CI                   [-32%, -7%]   [-32%, -7%]    
+##                          Average         Cumulative     
+## Actual                   108             6588           
+## Prediction (s.d.)        133 (8.9)       8140 (540.0)   
+## 95% CI                   [116, 151]      [7106, 9225]   
+##                                                         
+## Absolute effect (s.d.)   -25 (8.9)       -1552 (540.0)  
+## 95% CI                   [-43, -8.5]     [-2637, -518.6]
+##                                                         
+## Relative effect (s.d.)   -19% (6.6%)     -19% (6.6%)    
+## 95% CI                   [-32%, -6.4%]   [-32%, -6.4%]  
 ## 
-## Posterior tail-area probability p:   0.00204
-## Posterior prob. of a causal effect:  99.79592%
+## Posterior tail-area probability p:   0.00227
+## Posterior prob. of a causal effect:  99.77343%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
@@ -443,17 +655,17 @@ summary(impact_phil2)
 ## 
 ##                          Average      Cumulative 
 ## Actual                   234          1641       
-## Prediction (s.d.)        144 (10)     1011 (72)  
-## 95% CI                   [124, 164]   [870, 1151]
+## Prediction (s.d.)        144 (10)     1009 (73)  
+## 95% CI                   [124, 165]   [865, 1158]
 ##                                                  
-## Absolute effect (s.d.)   90 (10)      629 (72)   
-## 95% CI                   [70, 110]    [490, 771] 
+## Absolute effect (s.d.)   90 (10)      631 (73)   
+## 95% CI                   [69, 111]    [483, 775] 
 ##                                                  
-## Relative effect (s.d.)   62% (7.1%)   62% (7.1%) 
-## 95% CI                   [48%, 76%]   [48%, 76%] 
+## Relative effect (s.d.)   63% (7.2%)   63% (7.2%) 
+## 95% CI                   [48%, 77%]   [48%, 77%] 
 ## 
-## Posterior tail-area probability p:   0.0002
-## Posterior prob. of a causal effect:  99.97959%
+## Posterior tail-area probability p:   0.00021
+## Posterior prob. of a causal effect:  99.9794%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
@@ -470,17 +682,17 @@ summary(impact_phil3)
 ## 
 ##                          Average         Cumulative     
 ## Actual                   108             6588           
-## Prediction (s.d.)        134 (8.7)       8169 (528.4)   
-## 95% CI                   [118, 152]      [7173, 9250]   
+## Prediction (s.d.)        133 (8.8)       8140 (535.0)   
+## 95% CI                   [116, 151]      [7093, 9222]   
 ##                                                         
-## Absolute effect (s.d.)   -26 (8.7)       -1581 (528.4)  
-## 95% CI                   [-44, -9.6]     [-2662, -585.5]
+## Absolute effect (s.d.)   -25 (8.8)       -1552 (535.0)  
+## 95% CI                   [-43, -8.3]     [-2634, -505.3]
 ##                                                         
-## Relative effect (s.d.)   -19% (6.5%)     -19% (6.5%)    
-## 95% CI                   [-33%, -7.2%]   [-33%, -7.2%]  
+## Relative effect (s.d.)   -19% (6.6%)     -19% (6.6%)    
+## 95% CI                   [-32%, -6.2%]   [-32%, -6.2%]  
 ## 
-## Posterior tail-area probability p:   0.00082
-## Posterior prob. of a causal effect:  99.91837%
+## Posterior tail-area probability p:   0.00165
+## Posterior prob. of a causal effect:  99.83522%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
@@ -537,17 +749,17 @@ summary(impact_bos)
 ## 
 ##                          Average        Cumulative     
 ## Actual                   356            21719          
-## Prediction (s.d.)        619 (80)       37763 (4884)   
-## 95% CI                   [460, 774]     [28079, 47197] 
+## Prediction (s.d.)        617 (82)       37616 (5029)   
+## 95% CI                   [449, 774]     [27390, 47243] 
 ##                                                        
-## Absolute effect (s.d.)   -263 (80)      -16044 (4884)  
-## 95% CI                   [-418, -104]   [-25478, -6360]
+## Absolute effect (s.d.)   -261 (82)      -15897 (5029)  
+## 95% CI                   [-418, -93]    [-25523, -5670]
 ##                                                        
 ## Relative effect (s.d.)   -42% (13%)     -42% (13%)     
-## 95% CI                   [-67%, -17%]   [-67%, -17%]   
+## 95% CI                   [-68%, -15%]   [-68%, -15%]   
 ## 
-## Posterior tail-area probability p:   0.00084
-## Posterior prob. of a causal effect:  99.91588%
+## Posterior tail-area probability p:   0.00253
+## Posterior prob. of a causal effect:  99.74684%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
@@ -565,7 +777,30 @@ chicago_data <- zoo(cbind(chicago_data$by100000), as.Date(chicago_data$start_tim
 
 impact_chi <- CausalImpact(data = chicago_data, pre.period = pre_period, post.period = post_period, 
     model.args = list(niter = 5000, nseasons = 7))
+summary(impact_chi)
+```
 
+```
+## Posterior inference {CausalImpact}
+## 
+##                          Average        Cumulative     
+## Actual                   203            12377          
+## Prediction (s.d.)        399 (53)       24369 (3259)   
+## 95% CI                   [291, 504]     [17732, 30753] 
+##                                                        
+## Absolute effect (s.d.)   -197 (53)      -11991 (3259)  
+## 95% CI                   [-301, -88]    [-18376, -5355]
+##                                                        
+## Relative effect (s.d.)   -49% (13%)     -49% (13%)     
+## 95% CI                   [-75%, -22%]   [-75%, -22%]   
+## 
+## Posterior tail-area probability p:   0.00063
+## Posterior prob. of a causal effect:  99.93691%
+## 
+## For more details, type: summary(impact, "report")
+```
+
+```r
 plot(impact_chi)  ##Not a good fit to the data
 ```
 
@@ -578,7 +813,30 @@ washington_data <- zoo(cbind(washington_data$by100000), as.Date(washington_data$
 
 impact_DC <- CausalImpact(data = washington_data, pre.period = pre_period, post.period = post_period, 
     model.args = list(niter = 5000, nseasons = 7))
+summary(impact_DC)
+```
 
+```
+## Posterior inference {CausalImpact}
+## 
+##                          Average        Cumulative      
+## Actual                   1043           63643           
+## Prediction (s.d.)        1648 (140)     100532 (8510)   
+## 95% CI                   [1367, 1924]   [83398, 117378] 
+##                                                         
+## Absolute effect (s.d.)   -605 (140)     -36889 (8510)   
+## 95% CI                   [-881, -324]   [-53735, -19755]
+##                                                         
+## Relative effect (s.d.)   -37% (8.5%)    -37% (8.5%)     
+## 95% CI                   [-53%, -20%]   [-53%, -20%]    
+## 
+## Posterior tail-area probability p:   0.00021
+## Posterior prob. of a causal effect:  99.9789%
+## 
+## For more details, type: summary(impact, "report")
+```
+
+```r
 plot(impact_DC)  ##Not a good fit to the data
 ```
 

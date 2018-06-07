@@ -18,6 +18,8 @@ library(tseries)
 library(formatR)
 library(CausalImpact)
 library(zoo)
+library(normtest)
+library(car)
 
 options(scipen = 2, digits=4)
 opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
@@ -26,7 +28,7 @@ opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
 ```{r}
 city_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/city_day_sum.csv")
 member_data <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/MemberColl.csv")
-philly_weather <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/Phil_temp_2016.csv")
+phil_temp16 <- read.csv("https://raw.githubusercontent.com/walkabilly/Phillybikeshare/master/Phil_temp_2016.csv")
 ```
 
 ### Convert start_time from factor to date and creating moving averages
@@ -156,49 +158,85 @@ plot(smooth_plot)
 ### Covaraites: (1) daily average temperature; (2) daily average precipitation; (3) dummy varaible: 0 - no strike, 1 - strike; (4) Trips per 100K, Boston; (5) Trips per 100K, Washington DC; (6) Trips per 100K, Chicago; (7) time; (8) Interaction between time and dummy
 
 ```{r}
-library(dplyr)
-trip_Philly <- dplyr::select(filter(city_data,city=="Philly"),by100000,dummy)
-trip_Boston <- dplyr::select(filter(city_data,city=="Boston"),by100000)
-trip_Washington <- dplyr::select(filter(city_data,city=="Washington"),by100000)
 
-lm_tripRate <- 
-```
+trip_Philly <- arrange(dplyr::select(filter(city_data,city=="Philly"),by100000,dummy,start_time), start_time)
+trip_Boston <- arrange(dplyr::select(filter(city_data,city=="Boston"),by100000,start_time),start_time)
+trip_Washington <- arrange(dplyr::select(filter(city_data,city=="Washington"),by100000, start_time),start_time)
+trip_Chicago <- arrange(dplyr::select(filter(city_data,city=="Chicago"),by100000,start_time),start_time)
 
+time <- 1:366
 
+lm_tripRate <- lm(trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly$dummy+ trip_Boston$by100000 + trip_Washington$by100000 + trip_Chicago$by100000 + time + time*trip_Philly$dummy) 
 
-#### Linear Model on Total Number of Trips With Weekly and Seasonal Moving Average
+summary(lm_tripRate)
 
-```{r}
-lm_city_cnt <- lm(number_trips ~ cnt_ma7*dummy*city, data = city_data)
-summary(lm_city_cnt)
-city_data$lm_cnt_fitted <- lm_city_cnt$fitted.values
-
-lm_plot_cnt <- ggplot(city_data) +
-  geom_line(aes(x = start_time, y = number_trips, colour = "Count")) +
-  geom_line(aes(x = start_time, y = lm_cnt_fitted, colour = "Linear Model with moving averages")) +
-  geom_vline(xintercept=as.numeric(city_data$start_time[1215]), linetype=4) + 
-  facet_wrap(~ city) + 
+tripPhilly_fitted <- lm_tripRate$fitted.values
+lm_plot_tripRate <- ggplot(trip_Philly) +
+  geom_line(aes(x = start_time, y = by100000)) +
+  geom_line(aes(x = start_time, y = tripPhilly_fitted, colour = "#339999")) +
   theme_classic() +
-  ylab('Number of Trips') 
-plot(lm_plot_cnt)
-```
+  ylab('Trips per 100K people') 
 
-#### Linear Model on Trips per 100k people With Weekly and Seasonal Moving Average
+plot(lm_plot_tripRate)
 
-```{r}
-lm_city_100k <- lm(by100000 ~ cnt_ma7*dummy*city, data = city_data)
-summary(lm_city_100k)
-city_data$lm_100k_fitted <- lm_city_100k$fitted.values
 
-lm_plot_100k <- ggplot(city_data) +
-  geom_line(aes(x = start_time, y = by100000, colour = "Count")) +
-  geom_line(aes(x = start_time, y = lm_100k_fitted, colour = "Linear Model with moving averages")) +
-  geom_vline(xintercept=as.numeric(city_data$start_time[1215]), linetype=4) + 
-  facet_wrap(~ city) + 
+### Accounting for the potential quadratic trend of the data (time squared). This term captures the curvature of the trend
+lm_tripRate2 <- lm(trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly$dummy+ trip_Boston$by100000 + trip_Washington$by100000 + trip_Chicago$by100000 + poly(time, 2) + time*trip_Philly$dummy) ##Code for time squared interaction is I(time^2)*trip_Philly$dummy
+
+summary(lm_tripRate2)
+
+tripPhilly_fitted2 <- lm_tripRate2$fitted.values
+lm_plot_tripRate2 <- ggplot(trip_Philly) +
+  geom_line(aes(x = start_time, y = by100000)) +
+  geom_line(aes(x = start_time, y = tripPhilly_fitted2, colour = "#339999")) +
   theme_classic() +
-  ylab('Number of Trips x 100000 person') 
-plot(lm_plot_100k)
+  ylab('Trips per 100K people') 
+
+plot(lm_plot_tripRate2)
+
 ```
+
+
+###Linear model on Trips per 100K people, weekly moving average
+```{r}
+
+trip_Philly_MA <- arrange(dplyr::select(filter(city_data,city=="Philly"),cnt_ma7,dummy,start_time),start_time)
+trip_Boston_MA <- arrange(dplyr::select(filter(city_data,city=="Boston"),cnt_ma7,start_time),start_time)
+trip_Washington_MA <- arrange(dplyr::select(filter(city_data,city=="Washington"),cnt_ma7,start_time),start_time)
+trip_Chicago_MA <- arrange(dplyr::select(filter(city_data,city=="Chicago"),cnt_ma7,start_time),start_time)
+
+time_MA <- 1:366
+
+lm_tripRate_MA <- lm(trip_Philly_MA$cnt_ma7 ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly_MA$dummy+ trip_Boston_MA$cnt_ma7 + trip_Washington_MA$cnt_ma7 + trip_Chicago_MA$cnt_ma7 + time_MA + time_MA*trip_Philly_MA$dummy) 
+
+summary(lm_tripRate_MA)
+
+tripPhilly_fitted_MA <- lm_tripRate_MA$fitted.values
+lm_plot_tripRate_MA <- ggplot(trip_Philly_MA) +
+  geom_line(aes(x = start_time, y = cnt_ma7)) +
+  geom_line(aes(x = start_time, y = tripPhilly_fitted_MA, colour = "#339999")) +
+  theme_classic() +
+  ylab('Trips per 100K people_Weekly moving average') 
+
+plot(lm_plot_tripRate_MA)
+
+
+### Accounting for the potential quadratic trend of the data (time squared). This term captures the curvature of the trend
+lm_tripRate_MA2 <- lm(trip_Philly_MA$cnt_ma7 ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly_MA$dummy+ trip_Boston_MA$cnt_ma7 + trip_Washington_MA$cnt_ma7 + trip_Chicago_MA$cnt_ma7 + poly(time_MA,2) + time_MA*trip_Philly_MA$dummy) 
+
+summary(lm_tripRate_MA2)
+
+tripPhilly_fitted_MA2 <- lm_tripRate_MA2$fitted.values
+lm_plot_tripRate_MA2 <- ggplot(trip_Philly_MA) +
+  geom_line(aes(x = start_time, y = cnt_ma7)) +
+  geom_line(aes(x = start_time, y = tripPhilly_fitted_MA2, colour = "#339999")) +
+  theme_classic() +
+  ylab('Trips per 100K people_Weekly moving average') 
+
+plot(lm_plot_tripRate_MA2)
+```
+
+
 
 ### Subset to create datasets for each city
 
