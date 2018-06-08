@@ -20,6 +20,7 @@ library(CausalImpact)
 library(zoo)
 library(normtest)
 library(car)
+library(Hmisc)
 
 options(scipen = 2, digits=4)
 opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
@@ -137,6 +138,22 @@ washington_member_plot <- ggplot(data = washington_mem_data, aes(x = start_time,
 plot(washington_member_plot)
 ```
 
+#### Trip duration time series plot
+```{r}
+Philly_dur_data <- filter(city_data, city == "Philly")
+
+cityplot_dur_Philly <- ggplot(data = Philly_dur_data, aes(x = start_time, y = mDuration/60)) +
+  geom_line() +
+  stat_smooth(aes(group = dummy), method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
+  geom_vline(xintercept=as.numeric(city_data$start_time[""]), linetype=4) + 
+  facet_wrap(~ city) + 
+  theme_classic()
+  
+
+plot(cityplot_dur_Philly)
+```
+
+
 ### Data analysis
 
 #### Moving Averages
@@ -154,8 +171,8 @@ plot(smooth_plot)
 ```
 
 
-### Linear Model on Trips per 100K people
-### Covaraites: (1) daily average temperature; (2) daily average precipitation; (3) dummy varaible: 0 - no strike, 1 - strike; (4) Trips per 100K, Boston; (5) Trips per 100K, Washington DC; (6) Trips per 100K, Chicago; (7) time; (8) Interaction between time and dummy
+#### Model 1: Linear Model on Trips per 100K people
+#### Covaraites: (1) daily average temperature; (2) daily average precipitation; (3) dummy varaible: 0 - no strike, 1 - strike; (4) Trips per 100K, Boston; (5) Trips per 100K, Washington DC; (6) Trips per 100K, Chicago; (7) time; (8) Interaction between time and dummy
 
 ```{r}
 
@@ -166,6 +183,7 @@ trip_Chicago <- arrange(dplyr::select(filter(city_data,city=="Chicago"),by100000
 
 time <- 1:366
 
+##Model 1.1
 lm_tripRate <- lm(trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly$dummy+ trip_Boston$by100000 + trip_Washington$by100000 + trip_Chicago$by100000 + time + time*trip_Philly$dummy) 
 
 summary(lm_tripRate)
@@ -179,9 +197,9 @@ lm_plot_tripRate <- ggplot(trip_Philly) +
 
 plot(lm_plot_tripRate)
 
-
+##Model 1.2
 ### Accounting for the potential quadratic trend of the data (time squared). This term captures the curvature of the trend
-lm_tripRate2 <- lm(trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly$dummy+ trip_Boston$by100000 + trip_Washington$by100000 + trip_Chicago$by100000 + poly(time, 2) + time*trip_Philly$dummy) ##Code for time squared interaction is I(time^2)*trip_Philly$dummy
+lm_tripRate2 <- lm(trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly$dummy+ trip_Boston$by100000 + trip_Washington$by100000 + trip_Chicago$by100000 + poly(time, 2) + I(time^2)*trip_Philly$dummy) ##Code for time squared interaction is I(time^2)*trip_Philly$dummy
 
 summary(lm_tripRate2)
 
@@ -197,7 +215,7 @@ plot(lm_plot_tripRate2)
 ```
 
 
-###Linear model on Trips per 100K people, weekly moving average
+#### Model2: Linear model on Trips per 100K people, weekly moving average
 ```{r}
 
 trip_Philly_MA <- arrange(dplyr::select(filter(city_data,city=="Philly"),cnt_ma7,dummy,start_time),start_time)
@@ -207,6 +225,7 @@ trip_Chicago_MA <- arrange(dplyr::select(filter(city_data,city=="Chicago"),cnt_m
 
 time_MA <- 1:366
 
+##Model 2.1
 lm_tripRate_MA <- lm(trip_Philly_MA$cnt_ma7 ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly_MA$dummy+ trip_Boston_MA$cnt_ma7 + trip_Washington_MA$cnt_ma7 + trip_Chicago_MA$cnt_ma7 + time_MA + time_MA*trip_Philly_MA$dummy) 
 
 summary(lm_tripRate_MA)
@@ -236,47 +255,162 @@ lm_plot_tripRate_MA2 <- ggplot(trip_Philly_MA) +
 plot(lm_plot_tripRate_MA2)
 ```
 
+#### Trip duration as the outcome
+```{r}
+trip_Philly_dur <- arrange(dplyr::select(filter(city_data,city=="Philly"),mDuration,dummy,start_time), start_time)
+trip_Boston_dur <- arrange(dplyr::select(filter(city_data,city=="Boston"),mDuration,start_time),start_time)
+trip_Washington_dur <- arrange(dplyr::select(filter(city_data,city=="Washington"),mDuration, start_time),start_time)
+trip_Chicago_dur <- arrange(dplyr::select(filter(city_data,city=="Chicago"),mDuration,start_time),start_time)
+
+time_dur <- 1:366
+Philly_dur <- trip_Philly_dur$mDuration/60
+Boston_dur <- trip_Boston_dur$mDuration/60
+Washington_dur <- trip_Washington_dur$mDuration/60
+Chicago_dur <- trip_Chicago_dur$mDuration/60
+
+lm_tripRate_dur <- lm( Philly_dur ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly_dur$dummy + Boston_dur + Washington_dur + Chicago_dur + time_dur + time_dur*trip_Philly_dur$dummy) 
+
+summary(lm_tripRate_dur)
+```
+
+#### Model 3: Trip rate_membership as the outcome
+```{r}
+trip_Philly_mem <- arrange(dplyr::select(filter(member_data,city=="Philly" & membertype == "member"),by10000,dummy,start_time), start_time) ##Two-day data missing 01-23 and 01-24
+trip_Boston_mem <- arrange(dplyr::select(filter(member_data,city=="Boston" & membertype == "member"),by10000,start_time), start_time)
+trip_Washington_mem <- arrange(dplyr::select(filter(member_data,city=="Washington" & membertype == "member"),by10000, start_time),start_time)  ##Four-day data missing: 01-23 ~ 01-26
+trip_Chicago_mem <- arrange(dplyr::select(filter(member_data,city=="Chicago" & membertype == "member"),by10000,start_time),start_time)
+
+time_mem <- 1:366
+
+##Fill in the missing data
+trip_Philly_mem[365, "start_time"] <- "2016-01-23"
+trip_Philly_mem[366, "start_time"] <- "2016-01-24"
+trip_Philly_mem <- arrange(trip_Philly_mem, start_time)
+
+trip_Washington_mem[363, "start_time"] <- "2016-01-23"
+trip_Washington_mem[364, "start_time"] <- "2016-01-24"
+trip_Washington_mem[365, "start_time"] <- "2016-01-25"
+trip_Washington_mem[366, "start_time"] <- "2016-01-26"
+trip_Washington_mem <- arrange(trip_Washington_mem, start_time)
+
+Philly_mem <- trip_Philly_mem$by10000*10
+Boston_mem <- trip_Boston_mem$by10000*10
+Washington_mem <- trip_Washington_mem$by10000*10
+Chicago_mem <- trip_Chicago_mem$by10000*10
+
+##Model 3.1
+lm_tripRate_mem <- lm(Philly_mem ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly_mem$dummy + Boston_mem + Washington_mem + Chicago_mem + time_mem + time_mem*trip_Philly_mem$dummy) 
+
+summary(lm_tripRate_mem)
+
+tripPhilly_fitted_mem <- lm_tripRate_mem$fitted.values
+fitted_all <- vector(length=366)
+fitted_all[1:22] <- tripPhilly_fitted_mem[1:22]
+fitted_all[23:26] <- NA
+fitted_all[27:366] <- tripPhilly_fitted_mem[23:362]
+
+lm_plot_mem <- ggplot(trip_Philly_mem) +
+  geom_line(aes(x = start_time, y = Philly_mem)) +
+  geom_line(aes(x = start_time, y = fitted_all, colour = "#339999")) +
+  theme_classic() +
+  ylab('Trips per 100K people') 
+
+plot(lm_plot_mem)
+
+```
+
+#### Model4: Trip rate_shortterm as the outcome
+```{r}
+trip_Philly_short <- arrange(dplyr::select(filter(member_data,city=="Philly" & membertype == "shortterm"),by10000,dummy,start_time), start_time) ##Four-day data missing 01-23 and 01-26
+trip_Boston_short <- arrange(dplyr::select(filter(member_data,city=="Boston" & membertype == "shortterm"),by10000,start_time), start_time)
+trip_Washington_short <- arrange(dplyr::select(filter(member_data,city=="Washington" & membertype == "shortterm"),by10000, start_time),start_time)  ##Four-day data missing: 01-23 ~ 01-26
+trip_Chicago_short <- arrange(dplyr::select(filter(member_data,city=="Chicago" & membertype == "shortterm"),by10000,start_time),start_time)
+
+time_short <- 1:366
+
+##Fill in the missing data
+trip_Philly_short[363, "start_time"] <- "2016-01-23"
+trip_Philly_short[364, "start_time"] <- "2016-01-24"
+trip_Philly_short[365, "start_time"] <- "2016-01-25"
+trip_Philly_short[366, "start_time"] <- "2016-01-26"
+trip_Philly_short <- arrange(trip_Philly_short, start_time)
+
+trip_Washington_short[363, "start_time"] <- "2016-01-23"
+trip_Washington_short[364, "start_time"] <- "2016-01-24"
+trip_Washington_short[365, "start_time"] <- "2016-01-25"
+trip_Washington_short[366, "start_time"] <- "2016-01-26"
+trip_Washington_short <- arrange(trip_Washington_short, start_time)
+
+Philly_short <- trip_Philly_short$by10000*10
+Boston_short <- trip_Boston_short$by10000*10
+Washington_short <- trip_Washington_short$by10000*10
+Chicago_short <- trip_Chicago_short$by10000*10
+
+##Model 4.1
+lm_tripRate_short <- lm(Philly_short ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly_short$dummy + Boston_short + Washington_short + Chicago_short + time_short + time_short*trip_Philly_short$dummy) 
+
+summary(lm_tripRate_short)
+
+tripPhilly_fitted_short <- lm_tripRate_short$fitted.values
+fitted_all_short <- vector(length=366)
+fitted_all_short[1:22] <- tripPhilly_fitted_short[1:22]
+fitted_all_short[23:26] <- NA
+fitted_all_short[27:366] <- tripPhilly_fitted_short[23:362]
+
+lm_plot_short <- ggplot(trip_Philly_short) +
+  geom_line(aes(x = start_time, y = Philly_short)) +
+  geom_line(aes(x = start_time, y = fitted_all_short, colour = "#339999")) +
+  theme_classic() +
+  ylab('Trips per 100K people') 
+
+plot(lm_plot_short)
+
+```
+
 
 
 ### Subset to create datasets for each city
 
 ```{r}
-philly_data <- filter(city_data, city == "Philly")
-boston_data <- filter(city_data, city == "Boston")
-chicago_data <- filter(city_data, city == "Chicago")
-washington_data <- filter(city_data, city == "Washington")
+##All data
+philly_data <- arrange(filter(city_data, city == "Philly"),start_time)
+boston_data <- arrange(filter(city_data, city == "Boston"),start_time)
+chicago_data <- arrange(filter(city_data, city == "Chicago"),start_time)
+washington_data <- arrange(filter(city_data, city == "Washington"),start_time)
 ```
 
-## Philly CausalImpact
+### Model5: Philly CausalImpact
 
+#### Set pre- and post-periods
 ```{r}
-##Arrange the data based on time
-philly_data <- arrange(philly_data, start_time)
-
 ##Set pre- and post-periods
 pre_period <- as.Date(c("2016-01-01", "2016-10-31"))
 post_period <- as.Date(c("2016-11-01", "2016-12-31"))
 post_period2 <- as.Date(c("2016-11-01", "2016-11-07")) ##Assess the impact one week after the strike
+```
 
-##Modelling all Phil data
-philly_data <- zoo(cbind(philly_data$by100000, phil_temp16$MEAN), as.Date(philly_data$start_time))
+#### Modelling all Philadelphia data
+```{r}
+philly_all <- zoo(cbind(philly_data$by100000, phil_temp16$MEAN, phil_temp16$PRCP,boston_data$by100000,washington_data$by100000, chicago_data$by100000), as.Date(philly_data$start_time))
 
-##Modelling without covaraites
-impact_phil <- CausalImpact(data = philly_data, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
+##Model5.1: Modelling without covaraites
+impact_phil <- CausalImpact(data = philly_all[,1], pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
 summary(impact_phil)
 
 plot(impact_phil)
 
-##Post-period set as one week after the strike
-impact_phil2 <- CausalImpact(data = philly_data, pre.period = pre_period, post.period = post_period2, model.args = list(niter=5000, nseasons=7))
-summary(impact_phil2)
+##Model5.2:Modelling with covaraites: temperature; precipitation; trip-rate in other three cities
+impact_phil2 <- CausalImpact(data = philly_all, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
+summary(impact_phil2, "report")
 
-##Modelling with covaraites: temperature
-impact_phil3 <- CausalImpact(data = philly_data, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
-summary(impact_phil3)
+plot(impact_phil2, c("original", "pointwise"))
+# plot(impact_phil2$model$bsts.model,"coefficients")
 
-plot(impact_phil3)
+##Model5.3:Post-period set as one week after the strike
+impact_phil3 <- CausalImpact(data = philly_all, pre.period = pre_period, post.period = post_period2, model.args = list(niter=5000, nseasons=7))
+summary(impact_phil3, "report")
 
+plot(impact_phil3, c("original", "pointwise"))
 # ##Dynamic regression: whether to include a time-varying regression coefficient. Default is FALSE
 # impact_phil4 <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7, dynamic.regression=T))
 # ##Control monthly effect
@@ -289,16 +423,45 @@ plot(impact_phil3)
 # plot(impact_phil6) ##Not a good fit!!!
 ```
 
-##Modelling Philadelphia data based on membership
+
+#### Modelling Philadelphia data_membership
 ```{r}
-# philly_member_data <- filter(philly_mem_data, membertype == "member")
-# philly_member_data$start_time <- mdy(philly_member_data$start_time)
+##CausalImpact does not support missing covariaets: Impute missing trip data with weekly moving average
+Washington_mem[23:26] <- trip_Washington_MA$cnt_ma7[23:26]
 
-# philly_member_data <- arrange(philly_member_data, start_time)
+philly_mem_ci <- zoo(cbind(Philly_mem, MEAN=phil_temp16$MEAN, PRCP=phil_temp16$PRCP, Boston_mem, Washington_mem, Chicago_mem), as.Date(philly_data$start_time))
 
-# philly_data_mem <- zoo(cbind(philly_member_data$by10000, philly_member_data$start_time))
+##Model5.4
+impact_phil_mem <- CausalImpact(data = philly_mem_ci, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
+summary(impact_phil_mem, "report")
 
-# impact_pil_mem <- CausalImpact(data = philly_data_mem, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
+plot(impact_phil_mem, c("original", "pointwise"))
+
+##Model5.5
+impact_phil_mem2 <- CausalImpact(data = philly_mem_ci, pre.period = pre_period, post.period = post_period2, model.args = list(niter=5000, nseasons=7))
+summary(impact_phil_mem2, "report")
+
+plot(impact_phil_mem2, c("original", "pointwise"))
+```
+
+#### Modelling Philadelphia data_shortterm
+```{r}
+##CausalImpact does not support missing covariaets: Impute missing trip data with weekly moving average
+Washington_short[23:26] <- trip_Washington_MA$cnt_ma7[23:26]
+
+philly_short_ci <- zoo(cbind(Philly_short, MEAN=phil_temp16$MEAN, PRCP=phil_temp16$PRCP, Boston_short, Washington_short, Chicago_short), as.Date(philly_data$start_time))
+
+##Model5.6
+impact_phil_short <- CausalImpact(data = philly_short_ci, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
+summary(impact_phil_short, "report")
+
+plot(impact_phil_short,c("original", "pointwise"))
+
+##Model5.7
+impact_phil_short2 <- CausalImpact(data = philly_short_ci, pre.period = pre_period, post.period = post_period2, model.args = list(niter=5000, nseasons=7))
+summary(impact_phil_short2, "report")
+
+plot(impact_phil_short2,c("original", "pointwise"))
 ```
 
 ## Boston data analysis
