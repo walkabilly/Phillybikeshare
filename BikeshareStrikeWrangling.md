@@ -37,11 +37,9 @@ hubway = list.files(path = "./Bikeshare Data/", pattern = "Hubway.*\\.csv")
 
 
 ```r
-chicago <- divvy %>% 
-    map(function(x) {
-        read.csv(paste0("./Bikeshare Data/", x))
-    }) %>%
-    reduce(rbind)
+chicago <- divvy %>% map(function(x) {
+    read.csv(paste0("./Bikeshare Data/", x))
+}) %>% reduce(rbind)
 
 chicago$city <- "Chicago"
 head(chicago)
@@ -72,8 +70,10 @@ head(chicago)
 ```
 
 ```r
-chicagoClean <- subset(chicago, select = c(trip_id, tripduration, starttime, stoptime, usertype, city), stringsAsFactors = FALSE)
-names(chicagoClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", "city")
+chicagoClean <- subset(chicago, select = c(trip_id, tripduration, starttime, 
+    stoptime, usertype, city), stringsAsFactors = FALSE)
+names(chicagoClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", 
+    "city")
 head(chicagoClean)
 ```
 
@@ -113,11 +113,9 @@ head(chicagoClean)
 
 
 ```r
-boston <- hubway %>% 
-    map(function(x) {
-        read.csv(paste0("./Bikeshare Data/", x))
-    }) %>%
-    reduce(rbind)
+boston <- hubway %>% map(function(x) {
+    read.csv(paste0("./Bikeshare Data/", x))
+}) %>% reduce(rbind)
 
 boston$city <- "Boston"
 boston$trip_id <- seq.int(nrow(boston))
@@ -163,8 +161,10 @@ head(boston)
 ```
 
 ```r
-bostonClean <- subset(boston, select = c(trip_id, tripduration, starttime, stoptime, usertype, city), stringsAsFactors = FALSE)
-names(bostonClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", "city")
+bostonClean <- subset(boston, select = c(trip_id, tripduration, starttime, stoptime, 
+    usertype, city), stringsAsFactors = FALSE)
+names(bostonClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", 
+    "city")
 head(bostonClean)
 ```
 
@@ -225,23 +225,29 @@ From this article [https://stackoverflow.com/questions/1632772/appending-rows-to
 
 ```r
 philly1 <- read.csv("./Bikeshare Data/Indego_Trips_2016Q1.csv")
-  philly1 <- subset(philly1, select = c(trip_id, duration, start_time, end_time, passholder_type), stringsAsFactors = FALSE)
-  
+philly1 <- subset(philly1, select = c(trip_id, duration, start_time, end_time, 
+    passholder_type), stringsAsFactors = FALSE)
+
 philly2 <- read.csv("./Bikeshare Data/Indego_Trips_2016Q2.csv")
-  philly2 <- subset(philly2, select = c(trip_id, duration, start_time, end_time, passholder_type), stringsAsFactors = FALSE)
+philly2 <- subset(philly2, select = c(trip_id, duration, start_time, end_time, 
+    passholder_type), stringsAsFactors = FALSE)
 
 philly3 <- read.csv("./Bikeshare Data/Indego_Trips_Q3_2016_trips.csv")
-  philly3 <- subset(philly3, select = c(trip_id, duration, start_time, end_time, passholder_type), stringsAsFactors = FALSE)
+philly3 <- subset(philly3, select = c(trip_id, duration, start_time, end_time, 
+    passholder_type), stringsAsFactors = FALSE)
 
 philly4 <- read.csv("./Bikeshare Data/Indego_trips_Q4_2016.csv")
-  philly4 <- subset(philly4, select = c(trip_id, duration, start_time, end_time, passholder_type), stringsAsFactors = FALSE)
+philly4 <- subset(philly4, select = c(trip_id, duration, start_time, end_time, 
+    passholder_type), stringsAsFactors = FALSE)
 
-philly <- bind_rows(philly1, philly2, philly3, philly4)    
-      
+philly <- bind_rows(philly1, philly2, philly3, philly4)
+
 philly$city <- "Philly"
 
-phillyClean <- subset(philly, select = c(trip_id, duration, start_time, end_time, passholder_type, city), stringsAsFactors = FALSE)
-names(phillyClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", "city")
+phillyClean <- subset(philly, select = c(trip_id, duration, start_time, end_time, 
+    passholder_type, city), stringsAsFactors = FALSE)
+names(phillyClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", 
+    "city")
 
 ## Clean Start Time
 phillyClean$start_time <- gsub(" .*", "", phillyClean$start_time)
@@ -251,7 +257,7 @@ phillyClean$start_time <- mdy(phillyClean$start_time)
 phillyClean$end_time <- gsub(" .*", "", phillyClean$end_time)
 phillyClean$end_time <- mdy(phillyClean$end_time)
 
-##Add records for the missing two days
+## Add records for the missing two days
 phillyClean[365, "start_time"] <- "2016-01-23"
 phillyClean[366, "start_time"] <- "2016-01-24"
 
@@ -271,11 +277,9 @@ head(phillyClean)
 ##Washington 
 
 ```r
-washington <- cabi %>% 
-    map(function(x) {
-        read.csv(paste0("./Bikeshare Data/", x))
-    }) %>%
-    reduce(rbind)
+washington <- cabi %>% map(function(x) {
+    read.csv(paste0("./Bikeshare Data/", x))
+}) %>% reduce(rbind)
 
 washington$city <- "Washington"
 washington$duration <- as.integer(washington$duration)
@@ -300,8 +304,10 @@ head(washington)
 ```
 
 ```r
-washingtonClean <- subset(washington, select = c(trip_id, duration, start_time, end_time, passholder_type, city), stringsAsFactors = FALSE)
-names(washingtonClean) <- c("trip_id", "duration", "start_time", "end_time", "passholder_type", "city")
+washingtonClean <- subset(washington, select = c(trip_id, duration, start_time, 
+    end_time, passholder_type, city), stringsAsFactors = FALSE)
+names(washingtonClean) <- c("trip_id", "duration", "start_time", "end_time", 
+    "passholder_type", "city")
 head(washingtonClean)
 ```
 
@@ -388,20 +394,14 @@ write.csv(strikeData, file = "strikeData.csv")
 
 
 ```r
-#add dummy to CityColl
+# add dummy to CityColl
 
-strikeData$dummy <-  ifelse(strikeData$start_time >= as.Date("2016/11/01", format = "%Y/%m/%d"), 1, 0)
+strikeData$dummy <- ifelse(strikeData$start_time >= as.Date("2016/11/01", format = "%Y/%m/%d"), 
+    1, 0)
 
-strikeData$memberType <- recode_factor(strikeData$passholder_type, 
-                                    `Customer` = "shortterm",
-                                    `Subscriber` = "member",
-                                     `Indego30` = "member",
-                                     `IndegoFlex` = "shortterm",
-                                     `Walk-up` = "shortterm", 
-                                     `Registered` = "member",
-                                     `Casual` = "shortterm",
-                                     `Dependent` = "shortterm",
-                                     `Member` = "member")
+strikeData$memberType <- recode_factor(strikeData$passholder_type, Customer = "shortterm", 
+    Subscriber = "member", Indego30 = "member", IndegoFlex = "shortterm", `Walk-up` = "shortterm", 
+    Registered = "member", Casual = "shortterm", Dependent = "shortterm", Member = "member")
 
 table(strikeData$memberType, strikeData$passholder_type)
 ```
@@ -431,25 +431,18 @@ table(strikeData$passholder_type)
 
 
 ```r
-city_day_sum <- strikeData %>% 
-                    group_by(year, month, day, city) %>% 
-                          mutate(mDuration = mean(duration, na.rm = TRUE), 
-                                    number_trips = n())  %>% 
-                          distinct(year, month, day, city, .keep_all=TRUE)
+city_day_sum <- strikeData %>% group_by(year, month, day, city) %>% mutate(mDuration = mean(duration, 
+    na.rm = TRUE), number_trips = n()) %>% distinct(year, month, day, city, 
+    .keep_all = TRUE)
 
-##Normalize by city pop
-## Boston - 667137 (6.67137)
-## Chicago - 2695598 (26.95598)
-## Washington - 672228 (6.72228)
-## Philly - 1567872 (15.67872)
+## Normalize by city pop Boston - 667137 (6.67137) Chicago - 2695598
+## (26.95598) Washington - 672228 (6.72228) Philly - 1567872 (15.67872)
 
-city_day_sum$by100000 <-
-        ifelse(city_day_sum$city == "Philly", city_day_sum$number_trips/15.67872, NA) %>%
-        ifelse(city_day_sum$city == "Washington", city_day_sum$number_trips/6.72228, .) %>%
-        ifelse(city_day_sum$city == "Chicago", city_day_sum$number_trips/26.95598, .) %>%
-        ifelse(city_day_sum$city == "Boston", city_day_sum$number_trips/6.67137, .) 
-
-city_day_sum <- arrange(city_day_sum, start_time)
+city_day_sum$by100000 <- ifelse(city_day_sum$city == "Philly", city_day_sum$number_trips/15.67872, 
+    NA) %>% ifelse(city_day_sum$city == "Washington", city_day_sum$number_trips/6.72228, 
+    .) %>% ifelse(city_day_sum$city == "Chicago", city_day_sum$number_trips/26.95598, 
+    .) %>% ifelse(city_day_sum$city == "Boston", city_day_sum$number_trips/6.67137, 
+    .)
 
 write.csv(city_day_sum, "city_day_sum.csv")
 ```
