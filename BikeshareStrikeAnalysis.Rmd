@@ -201,14 +201,11 @@ table3_1
 
 tripPhilly_fitted <- lm_tripRate$fitted.values
 
-lm_plot_tripRate <- ggplot(trip_Philly) +
-<<<<<<< HEAD
-  geom_line(aes(x = start_time, y = by100000, colour="Observed data")) +
-  geom_line(aes(x = start_time, y = tripPhilly_fitted, colour = "Fitted data")) +
-=======
+lm_plot_tripRate <- ggplot(data=trip_Philly) +
+  # geom_line(aes(x = start_time, y = by100000, colour="Observed data")) +
+  # geom_line(aes(x = start_time, y = tripPhilly_fitted, colour = "Fitted data")) +
   geom_line(aes(x = start_time, y = by100000), colour = "black") +
   geom_line(aes(x = start_time, y = tripPhilly_fitted), colour = "gray70", linetype = "dashed") +
->>>>>>> ac2a77f44b31a1c822cc556d533c11e472bed80c
   theme_classic() +
   xlab("") +
   ylab('Trips per 100K people') +
