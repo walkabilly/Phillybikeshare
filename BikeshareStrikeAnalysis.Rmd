@@ -138,7 +138,7 @@ washington_member_plot <- ggplot(data = washington_mem_data, aes(x = start_time,
 plot(washington_member_plot)
 ```
 
-#### Trip duration time series plot
+### Trip duration time series plot
 ```{r}
 Philly_dur_data <- filter(city_data, city == "Philly")
 
@@ -152,7 +152,6 @@ cityplot_dur_Philly <- ggplot(data = Philly_dur_data, aes(x = start_time, y = mD
 
 plot(cityplot_dur_Philly)
 ```
-
 
 ### Data analysis
 
@@ -335,7 +334,6 @@ lm_plot_mem <- ggplot(trip_Philly_mem) +
   ylab('Trips per 100K people') 
 
 plot(lm_plot_mem)
-
 ```
 
 ## Model4: Trip rate_shortterm as the outcome
@@ -388,8 +386,6 @@ lm_plot_short <- ggplot(trip_Philly_short) +
 plot(lm_plot_short)
 
 ```
-
-
 
 ### Subset to create datasets for each city
 
