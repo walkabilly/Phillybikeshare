@@ -190,10 +190,12 @@ summary(lm_tripRate)
 
 tripPhilly_fitted <- lm_tripRate$fitted.values
 lm_plot_tripRate <- ggplot(trip_Philly) +
-  geom_line(aes(x = start_time, y = by100000)) +
-  geom_line(aes(x = start_time, y = tripPhilly_fitted, colour = "#339999")) +
+  geom_line(aes(x = start_time, y = by100000, colour="Observed data")) +
+  geom_line(aes(x = start_time, y = tripPhilly_fitted, colour = "Fitted data")) +
   theme_classic() +
-  ylab('Trips per 100K people') 
+  xlab("") +
+  ylab('Trips per 100K people') +
+  scale_colour_discrete(name="") 
 
 plot(lm_plot_tripRate)
 
@@ -205,10 +207,12 @@ summary(lm_tripRate2)
 
 tripPhilly_fitted2 <- lm_tripRate2$fitted.values
 lm_plot_tripRate2 <- ggplot(trip_Philly) +
-  geom_line(aes(x = start_time, y = by100000)) +
-  geom_line(aes(x = start_time, y = tripPhilly_fitted2, colour = "#339999")) +
+  geom_line(aes(x = start_time, y = by100000, colour="Observed data")) +
+  geom_line(aes(x = start_time, y = tripPhilly_fitted2, colour = "Fitted data")) +
   theme_classic() +
-  ylab('Trips per 100K people') 
+  xlab("") +
+  ylab('Trips per 100K people') +
+  scale_colour_discrete(name="") 
 
 plot(lm_plot_tripRate2)
 
@@ -310,10 +314,12 @@ fitted_all[23:26] <- NA
 fitted_all[27:366] <- tripPhilly_fitted_mem[23:362]
 
 lm_plot_mem <- ggplot(trip_Philly_mem) +
-  geom_line(aes(x = start_time, y = Philly_mem)) +
-  geom_line(aes(x = start_time, y = fitted_all, colour = "#339999")) +
+  geom_line(aes(x = start_time, y = Philly_mem, colour="Observed data")) +
+  geom_line(aes(x = start_time, y = fitted_all, colour = "Fitted data")) +
   theme_classic() +
-  ylab('Trips per 100K people') 
+  xlab("") +
+  ylab('Trips per 100K people') +
+  scale_colour_discrete(name="") 
 
 plot(lm_plot_mem)
 
@@ -358,10 +364,12 @@ fitted_all_short[23:26] <- NA
 fitted_all_short[27:366] <- tripPhilly_fitted_short[23:362]
 
 lm_plot_short <- ggplot(trip_Philly_short) +
-  geom_line(aes(x = start_time, y = Philly_short)) +
-  geom_line(aes(x = start_time, y = fitted_all_short, colour = "#339999")) +
+  geom_line(aes(x = start_time, y = Philly_short, colour="Observed data")) +
+  geom_line(aes(x = start_time, y = fitted_all_short, colour = "Fitted data")) +
   theme_classic() +
-  ylab('Trips per 100K people') 
+  xlab("") +
+  ylab('Trips per 100K people') +
+  scale_colour_discrete(name="") 
 
 plot(lm_plot_short)
 
@@ -433,7 +441,7 @@ philly_mem_ci <- zoo(cbind(Philly_mem, MEAN=phil_temp16$MEAN, PRCP=phil_temp16$P
 
 ##Model5.4
 impact_phil_mem <- CausalImpact(data = philly_mem_ci, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
-summary(impact_phil_mem, "report")
+summary(impact_phil_mem)
 
 plot(impact_phil_mem, c("original", "pointwise"))
 
@@ -453,7 +461,7 @@ philly_short_ci <- zoo(cbind(Philly_short, MEAN=phil_temp16$MEAN, PRCP=phil_temp
 
 ##Model5.6
 impact_phil_short <- CausalImpact(data = philly_short_ci, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
-summary(impact_phil_short, "report")
+summary(impact_phil_short)
 
 plot(impact_phil_short,c("original", "pointwise"))
 
