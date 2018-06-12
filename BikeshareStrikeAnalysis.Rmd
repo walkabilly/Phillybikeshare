@@ -48,7 +48,6 @@ city_data <- city_data %>%
       cnt_ma7 = rollmean(by100000, k = 7, fill = by100000),
       cnt_ma30 = rollmean(by100000, k = 30, fill = by100000),
       cnt_ma = rollmean(cnt_ma7, k = 30, fill = by100000)
-      ## ADD Deseason variable
     )
 
 member_data <- member_data %>%
