@@ -182,14 +182,14 @@ time <- 1:366
 
 ## Model 1: Linear Model on Trips per 100K people
 ### Covariates: 
-1. daily average temperature
-2. daily average precipitation
-3. dummy varaible: 0 - no strike, 1 - strike
-4. Trips per 100K, Boston
-5. Trips per 100K, Washington DC
-6. Trips per 100K, Chicago
-7. time
-8. Interaction between time and dummy
+###1. daily average temperature
+###2. daily average precipitation
+###3. dummy varaible: 0 - no strike, 1 - strike
+###4. Trips per 100K, Boston
+###5. Trips per 100K, Washington DC
+###6. Trips per 100K, Chicago
+###7. time
+###8. Interaction between time and dummy
 
 ```{r}
 ##Model 1.1
