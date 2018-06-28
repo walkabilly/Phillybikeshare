@@ -235,6 +235,8 @@ plot(lm_plot_tripRate2)
 
 ```
 
+## Model 1.3
+### Three time-periods: 
 
 ### Model2: Linear model on Trips per 100K people, weekly moving average
 ```{r}
