@@ -21,6 +21,7 @@ library(zoo)
 library(normtest)
 library(car)
 library(Hmisc)
+library(multcomp)
 
 options(scipen = 2, digits=4)
 opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
@@ -236,7 +237,43 @@ plot(lm_plot_tripRate2)
 ```
 
 ## Model 1.3
-### Three time-periods: 
+### Three time-periods: pre-strike, strike, post-strike
+```{r}
+##Create a new category variable rather than a dummy variable
+category <- factor(c(rep(1,305),rep(2,7),rep(3,54)))
+time_strike <- c(rep(0,305),1:7,rep(0,54))
+time_post <- c(rep(0,312),1:54)
+
+lm_tripRate3 <- lm(trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + category+ trip_Boston$by100000 + trip_Washington$by100000 + trip_Chicago$by100000 + time + time_strike + time_post) 
+
+summary(lm_tripRate3)
+
+coef_diff_all <- lm_tripRate3$coefficients[4]-lm_tripRate3$coefficients[5]
+coef_diff_all
+
+K_matrix <- matrix(c(rep(0,3),1,-1,rep(0,6)),1)
+t_all <- glht(lm_tripRate3, K_matrix)
+summary(t_all)
+
+table3_2 <- cbind(lm_tripRate3$coefficients, confint(lm_tripRate3))
+
+table3_2
+
+tripPhilly_fitted3 <- lm_tripRate3$fitted.values
+
+lm_plot_tripRate3 <- ggplot(data=trip_Philly) +
+  # geom_line(aes(x = start_time, y = by100000, colour="Observed data")) +
+  # geom_line(aes(x = start_time, y = tripPhilly_fitted, colour = "Fitted data")) +
+  geom_line(aes(x = start_time, y = by100000), colour = "black") +
+  geom_line(aes(x = start_time, y = tripPhilly_fitted3), colour = "gray70", linetype = "dashed") +
+  theme_classic() +
+  xlab("") +
+  ylab('Trips per 100K people') +
+  scale_colour_discrete(name="") 
+
+plot(lm_plot_tripRate3)
+```
+
 
 ### Model2: Linear model on Trips per 100K people, weekly moving average
 ```{r}
@@ -324,9 +361,9 @@ Chicago_mem <- trip_Chicago_mem$by10000*10
 lm_tripRate_mem <- lm(Philly_mem ~ phil_temp16$MEAN + phil_temp16$PRCP + trip_Philly_mem$dummy + Boston_mem + Washington_mem + Chicago_mem + time_mem + time_mem*trip_Philly_mem$dummy) 
 summary(lm_tripRate_mem)
 
-table3_2 <- cbind(lm_tripRate_mem$coefficients, confint(lm_tripRate_mem))
+table3_3 <- cbind(lm_tripRate_mem$coefficients, confint(lm_tripRate_mem))
 
-table3_2
+table3_3
 
 tripPhilly_fitted_mem <- lm_tripRate_mem$fitted.values
 fitted_all <- vector(length=366)
@@ -343,6 +380,37 @@ lm_plot_mem <- ggplot(trip_Philly_mem) +
   scale_colour_discrete(name="") 
 
 plot(lm_plot_mem)
+
+##Model 3.2: Three time-periods: pre-strike, strike, post-strike
+lm_tripRate_mem2 <- lm(Philly_mem ~ phil_temp16$MEAN + phil_temp16$PRCP + category + Boston_mem + Washington_mem + Chicago_mem + time_mem + time_strike + time_post) 
+summary(lm_tripRate_mem2)
+
+coef_diff_mem <- lm_tripRate_mem2$coefficients[4]-lm_tripRate_mem2$coefficients[5]
+coef_diff_mem
+
+t_mem <- glht(lm_tripRate_mem2, K_matrix)
+summary(t_mem)
+
+table3_4 <- cbind(lm_tripRate_mem2$coefficients, confint(lm_tripRate_mem2))
+
+table3_4
+
+tripPhilly_fitted_mem2 <- lm_tripRate_mem2$fitted.values
+fitted_all2 <- vector(length=366)
+fitted_all2[1:22] <- tripPhilly_fitted_mem2[1:22]
+fitted_all2[23:26] <- NA
+fitted_all2[27:366] <- tripPhilly_fitted_mem2[23:362]
+
+lm_plot_mem2 <- ggplot(trip_Philly_mem) +
+  geom_line(aes(x = start_time, y = Philly_mem, colour="Observed data")) +
+  geom_line(aes(x = start_time, y = fitted_all2, colour = "Fitted data")) +
+  theme_classic() +
+  xlab("") +
+  ylab('Trips per 100K people') +
+  scale_colour_discrete(name="") 
+
+plot(lm_plot_mem2)
+
 ```
 
 ## Model4: Trip rate_shortterm as the outcome
@@ -396,6 +464,36 @@ lm_plot_short <- ggplot(trip_Philly_short) +
 
 plot(lm_plot_short)
 
+##Model 4.2: Three time-periods: pre-strike, strike, post-strike
+lm_tripRate_short2 <- lm(Philly_short ~ phil_temp16$MEAN + phil_temp16$PRCP + category + Boston_short + Washington_short + Chicago_short + time_short + time_strike + time_post) 
+summary(lm_tripRate_short2)
+
+coef_diff_short <- lm_tripRate_short2$coefficients[4]-lm_tripRate_short2$coefficients[5]
+coef_diff_short
+
+t_short <- glht(lm_tripRate_short2, K_matrix)
+summary(t_short)
+
+table3_6 <- cbind(lm_tripRate_short2$coefficients, confint(lm_tripRate_short2))
+
+table3_6
+
+tripPhilly_fitted_short2 <- lm_tripRate_short2$fitted.values
+fitted_all_short2 <- vector(length=366)
+fitted_all_short2[1:22] <- tripPhilly_fitted_short2[1:22]
+fitted_all_short2[23:26] <- NA
+fitted_all_short2[27:366] <- tripPhilly_fitted_short2[23:362]
+
+lm_plot_short2 <- ggplot(trip_Philly_short) +
+  geom_line(aes(x = start_time, y = Philly_short, colour="Observed data")) +
+  geom_line(aes(x = start_time, y = fitted_all_short2, colour = "Fitted data")) +
+  theme_classic() +
+  xlab("") +
+  ylab('Trips per 100K people') +
+  scale_colour_discrete(name="") 
+
+plot(lm_plot_short2)
+
 ```
 
 ### Subset to create datasets for each city
@@ -416,6 +514,7 @@ washington_data <- arrange(filter(city_data, city == "Washington"),start_time)
 pre_period <- as.Date(c("2016-01-01", "2016-10-31"))
 post_period <- as.Date(c("2016-11-01", "2016-12-31"))
 post_period2 <- as.Date(c("2016-11-01", "2016-11-07")) ##Assess the impact one week after the strike
+post_strike <- as.Date(c("2016-11-08", "2016-12-31"))
 ```
 
 #### Modelling all Philadelphia data
@@ -440,6 +539,13 @@ impact_phil3 <- CausalImpact(data = philly_all, pre.period = pre_period, post.pe
 summary(impact_phil3, "report")
 
 plot(impact_phil3, c("original", "pointwise"))
+
+##Model5.4:Pre-period: strike
+impact_phil4 <- CausalImpact(data = philly_all, pre.period = post_period2, post.period = post_strike, model.args = list(niter=5000, nseasons=7))
+summary(impact_phil4, "report")
+
+plot(impact_phil4, c("original", "pointwise"))
+
 # ##Dynamic regression: whether to include a time-varying regression coefficient. Default is FALSE
 # impact_phil4 <- CausalImpact(data = data, pre.period = pre.period, post.period = post.period, model.args = list(niter=5000, nseasons=7, dynamic.regression=T))
 # ##Control monthly effect
@@ -460,17 +566,23 @@ Washington_mem[23:26] <- trip_Washington_MA$cnt_ma7[23:26]
 
 philly_mem_ci <- zoo(cbind(Philly_mem, MEAN=phil_temp16$MEAN, PRCP=phil_temp16$PRCP, Boston_mem, Washington_mem, Chicago_mem), as.Date(philly_data$start_time))
 
-##Model5.4
+##Model5.5
 impact_phil_mem <- CausalImpact(data = philly_mem_ci, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
 summary(impact_phil_mem)
 
 plot(impact_phil_mem, c("original", "pointwise"))
 
-##Model5.5
+##Model5.6:Post-period set as one week after the strike
 impact_phil_mem2 <- CausalImpact(data = philly_mem_ci, pre.period = pre_period, post.period = post_period2, model.args = list(niter=5000, nseasons=7))
 summary(impact_phil_mem2, "report")
 
 plot(impact_phil_mem2, c("original", "pointwise"))
+
+##Model5.7:Pre-period: strike
+impact_phil_mem3 <- CausalImpact(data = philly_mem_ci, pre.period = post_period2, post.period = post_strike, model.args = list(niter=5000, nseasons=7))
+summary(impact_phil_mem3, "report")
+
+plot(impact_phil_mem3, c("original", "pointwise"))
 ```
 
 #### Modelling Philadelphia data_shortterm
@@ -480,17 +592,23 @@ Washington_short[23:26] <- trip_Washington_MA$cnt_ma7[23:26]
 
 philly_short_ci <- zoo(cbind(Philly_short, MEAN=phil_temp16$MEAN, PRCP=phil_temp16$PRCP, Boston_short, Washington_short, Chicago_short), as.Date(philly_data$start_time))
 
-##Model5.6
+##Model5.8
 impact_phil_short <- CausalImpact(data = philly_short_ci, pre.period = pre_period, post.period = post_period, model.args = list(niter=5000, nseasons=7))
 summary(impact_phil_short)
 
 plot(impact_phil_short,c("original", "pointwise"))
 
-##Model5.7
+##Model5.9:Post-period set as one week after the strike
 impact_phil_short2 <- CausalImpact(data = philly_short_ci, pre.period = pre_period, post.period = post_period2, model.args = list(niter=5000, nseasons=7))
 summary(impact_phil_short2, "report")
 
-plot(impact_phil_short2,c("original", "pointwise"))
+plot(impact_phil_short2, c("original", "pointwise"))
+
+##Model5.10:Pre-period: strike
+impact_phil_short3 <- CausalImpact(data = philly_short_ci, pre.period = post_period2, post.period = post_strike, model.args = list(niter=5000, nseasons=7))
+summary(impact_phil_short3, "report")
+
+plot(impact_phil_short3, c("original", "pointwise"))
 ```
 
 ## Boston data analysis
