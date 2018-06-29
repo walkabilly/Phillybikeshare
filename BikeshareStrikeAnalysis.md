@@ -22,6 +22,7 @@ library(zoo)
 library(normtest)
 library(car)
 library(Hmisc)
+library(multcomp)
 
 options(scipen = 2, digits=4)
 opts_chunk$set(warning = FALSE, message = FALSE, error = FALSE, tidy = TRUE)
@@ -290,6 +291,122 @@ plot(lm_plot_tripRate2)
 
 ![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
 
+## Model 1.3
+### Three time-periods: pre-strike, strike, post-strike
+
+```r
+## Create a new category variable rather than a dummy variable
+category <- factor(c(rep(1, 305), rep(2, 7), rep(3, 54)))
+time_strike <- c(rep(0, 305), 1:7, rep(0, 54))
+time_post <- c(rep(0, 312), 1:54)
+
+lm_tripRate3 <- lm(trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+    category + trip_Boston$by100000 + trip_Washington$by100000 + trip_Chicago$by100000 + 
+    time + time_strike + time_post)
+
+summary(lm_tripRate3)
+```
+
+```
+## 
+## Call:
+## lm(formula = trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+##     category + trip_Boston$by100000 + trip_Washington$by100000 + 
+##     trip_Chicago$by100000 + time + time_strike + time_post)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -55.72  -7.67   1.04   8.76  67.06 
+## 
+## Coefficients:
+##                          Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)              -2.64215    3.69248   -0.72    0.475    
+## phil_temp16$MEAN         -0.17135    0.09218   -1.86    0.064 .  
+## phil_temp16$PRCP         -4.50111    1.84156   -2.44    0.015 *  
+## category2                92.85722   12.69274    7.32  1.7e-12 ***
+## category3                12.65185    4.96117    2.55    0.011 *  
+## trip_Boston$by100000      0.07694    0.00550   13.99  < 2e-16 ***
+## trip_Washington$by100000  0.04841    0.00262   18.46  < 2e-16 ***
+## trip_Chicago$by100000     0.00840    0.00792    1.06    0.289    
+## time                      0.10404    0.01590    6.54  2.1e-10 ***
+## time_strike              -2.95407    2.78840   -1.06    0.290    
+## time_post                -0.66057    0.14023   -4.71  3.5e-06 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 14.7 on 355 degrees of freedom
+## Multiple R-squared:  0.935,	Adjusted R-squared:  0.933 
+## F-statistic:  508 on 10 and 355 DF,  p-value: <2e-16
+```
+
+```r
+coef_diff_all <- lm_tripRate3$coefficients[4] - lm_tripRate3$coefficients[5]
+coef_diff_all
+```
+
+```
+## category2 
+##     80.21
+```
+
+```r
+K_matrix <- matrix(c(rep(0, 3), 1, -1, rep(0, 6)), 1)
+t_all <- glht(lm_tripRate3, K_matrix)
+summary(t_all)
+```
+
+```
+## 
+## 	 Simultaneous Tests for General Linear Hypotheses
+## 
+## Fit: lm(formula = trip_Philly$by100000 ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+##     category + trip_Boston$by100000 + trip_Washington$by100000 + 
+##     trip_Chicago$by100000 + time + time_strike + time_post)
+## 
+## Linear Hypotheses:
+##        Estimate Std. Error t value Pr(>|t|)    
+## 1 == 0     80.2       13.1    6.11  2.5e-09 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## (Adjusted p values reported -- single-step method)
+```
+
+```r
+table3_2 <- cbind(lm_tripRate3$coefficients, confint(lm_tripRate3))
+
+table3_2
+```
+
+```
+##                                        2.5 %     97.5 %
+## (Intercept)              -2.642150 -9.904029   4.619730
+## phil_temp16$MEAN         -0.171350 -0.352641   0.009941
+## phil_temp16$PRCP         -4.501109 -8.122855  -0.879363
+## category2                92.857223 67.894799 117.819647
+## category3                12.651853  2.894881  22.408825
+## trip_Boston$by100000      0.076943  0.066125   0.087762
+## trip_Washington$by100000  0.048408  0.043251   0.053565
+## trip_Chicago$by100000     0.008402 -0.007165   0.023968
+## time                      0.104045  0.072771   0.135318
+## time_strike              -2.954073 -8.437940   2.529794
+## time_post                -0.660566 -0.936349  -0.384783
+```
+
+```r
+tripPhilly_fitted3 <- lm_tripRate3$fitted.values
+
+lm_plot_tripRate3 <- ggplot(data = trip_Philly) + # geom_line(aes(x = start_time, y = by100000, colour='Observed data')) +
+# geom_line(aes(x = start_time, y = tripPhilly_fitted, colour = 'Fitted
+# data')) +
+geom_line(aes(x = start_time, y = by100000), colour = "black") + geom_line(aes(x = start_time, 
+    y = tripPhilly_fitted3), colour = "gray70", linetype = "dashed") + theme_classic() + 
+    xlab("") + ylab("Trips per 100K people") + scale_colour_discrete(name = "")
+
+plot(lm_plot_tripRate3)
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+
 
 ### Model2: Linear model on Trips per 100K people, weekly moving average
 
@@ -352,7 +469,7 @@ lm_plot_tripRate_MA <- ggplot(trip_Philly_MA) + geom_line(aes(x = start_time,
 plot(lm_plot_tripRate_MA)
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 ```r
 ### Accounting for the potential quadratic trend of the data (time squared).
@@ -405,7 +522,7 @@ lm_plot_tripRate_MA2 <- ggplot(trip_Philly_MA) + geom_line(aes(x = start_time,
 plot(lm_plot_tripRate_MA2)
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-14-2.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-15-2.png)<!-- -->
 
 #### Trip duration as the outcome
 
@@ -530,9 +647,9 @@ summary(lm_tripRate_mem)
 ```
 
 ```r
-table3_2 <- cbind(lm_tripRate_mem$coefficients, confint(lm_tripRate_mem))
+table3_3 <- cbind(lm_tripRate_mem$coefficients, confint(lm_tripRate_mem))
 
-table3_2
+table3_3
 ```
 
 ```
@@ -563,7 +680,116 @@ lm_plot_mem <- ggplot(trip_Philly_mem) + geom_line(aes(x = start_time, y = Phill
 plot(lm_plot_mem)
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+
+```r
+## Model 3.2: Three time-periods: pre-strike, strike, post-strike
+lm_tripRate_mem2 <- lm(Philly_mem ~ phil_temp16$MEAN + phil_temp16$PRCP + category + 
+    Boston_mem + Washington_mem + Chicago_mem + time_mem + time_strike + time_post)
+summary(lm_tripRate_mem2)
+```
+
+```
+## 
+## Call:
+## lm(formula = Philly_mem ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+##     category + Boston_mem + Washington_mem + Chicago_mem + time_mem + 
+##     time_strike + time_post)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -52.50  -6.59   0.51   7.73  34.87 
+## 
+## Coefficients:
+##                   Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)      -10.96019    3.32277   -3.30  0.00107 ** 
+## phil_temp16$MEAN  -0.08566    0.06291   -1.36  0.17421    
+## phil_temp16$PRCP  -5.78052    1.49946   -3.86  0.00014 ***
+## category2         41.38963   10.39958    3.98  8.4e-05 ***
+## category3          7.26699    4.01813    1.81  0.07138 .  
+## Boston_mem         0.06368    0.00591   10.78  < 2e-16 ***
+## Washington_mem     0.05174    0.00293   17.68  < 2e-16 ***
+## Chicago_mem        0.02255    0.01127    2.00  0.04613 *  
+## time_mem           0.13433    0.01283   10.47  < 2e-16 ***
+## time_strike        0.62797    2.27978    0.28  0.78313    
+## time_post         -0.67906    0.11312   -6.00  4.8e-09 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 12 on 351 degrees of freedom
+##   (4 observations deleted due to missingness)
+## Multiple R-squared:  0.938,	Adjusted R-squared:  0.936 
+## F-statistic:  533 on 10 and 351 DF,  p-value: <2e-16
+```
+
+```r
+coef_diff_mem <- lm_tripRate_mem2$coefficients[4] - lm_tripRate_mem2$coefficients[5]
+coef_diff_mem
+```
+
+```
+## category2 
+##     34.12
+```
+
+```r
+t_mem <- glht(lm_tripRate_mem2, K_matrix)
+summary(t_mem)
+```
+
+```
+## 
+## 	 Simultaneous Tests for General Linear Hypotheses
+## 
+## Fit: lm(formula = Philly_mem ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+##     category + Boston_mem + Washington_mem + Chicago_mem + time_mem + 
+##     time_strike + time_post)
+## 
+## Linear Hypotheses:
+##        Estimate Std. Error t value Pr(>|t|)   
+## 1 == 0     34.1       10.7    3.18   0.0016 **
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## (Adjusted p values reported -- single-step method)
+```
+
+```r
+table3_4 <- cbind(lm_tripRate_mem2$coefficients, confint(lm_tripRate_mem2))
+
+table3_4
+```
+
+```
+##                                  2.5 %   97.5 %
+## (Intercept)      -10.96019 -17.4952407 -4.42514
+## phil_temp16$MEAN  -0.08566  -0.2093914  0.03807
+## phil_temp16$PRCP  -5.78052  -8.7295772 -2.83147
+## category2         41.38963  20.9363034 61.84296
+## category3          7.26699  -0.6356409 15.16963
+## Boston_mem         0.06368   0.0520555  0.07530
+## Washington_mem     0.05174   0.0459856  0.05750
+## Chicago_mem        0.02255   0.0003893  0.04472
+## time_mem           0.13433   0.1090968  0.15957
+## time_strike        0.62797  -3.8557765  5.11173
+## time_post         -0.67906  -0.9015333 -0.45658
+```
+
+```r
+tripPhilly_fitted_mem2 <- lm_tripRate_mem2$fitted.values
+fitted_all2 <- vector(length = 366)
+fitted_all2[1:22] <- tripPhilly_fitted_mem2[1:22]
+fitted_all2[23:26] <- NA
+fitted_all2[27:366] <- tripPhilly_fitted_mem2[23:362]
+
+lm_plot_mem2 <- ggplot(trip_Philly_mem) + geom_line(aes(x = start_time, y = Philly_mem, 
+    colour = "Observed data")) + geom_line(aes(x = start_time, y = fitted_all2, 
+    colour = "Fitted data")) + theme_classic() + xlab("") + ylab("Trips per 100K people") + 
+    scale_colour_discrete(name = "")
+
+plot(lm_plot_mem2)
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-17-2.png)<!-- -->
 
 ## Model4: Trip rate_shortterm as the outcome
 
@@ -679,7 +905,117 @@ lm_plot_short <- ggplot(trip_Philly_short) + geom_line(aes(x = start_time, y = P
 plot(lm_plot_short)
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+
+```r
+## Model 4.2: Three time-periods: pre-strike, strike, post-strike
+lm_tripRate_short2 <- lm(Philly_short ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+    category + Boston_short + Washington_short + Chicago_short + time_short + 
+    time_strike + time_post)
+summary(lm_tripRate_short2)
+```
+
+```
+## 
+## Call:
+## lm(formula = Philly_short ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+##     category + Boston_short + Washington_short + Chicago_short + 
+##     time_short + time_strike + time_post)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -22.69  -2.71  -0.70   1.99  36.85 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)       1.66434    1.38683    1.20   0.2309    
+## phil_temp16$MEAN  0.05572    0.03157    1.77   0.0784 .  
+## phil_temp16$PRCP -0.52109    0.76558   -0.68   0.4965    
+## category2        49.26597    5.20524    9.46  < 2e-16 ***
+## category3         3.96768    2.01690    1.97   0.0499 *  
+## Boston_short      0.03452    0.00623    5.54  5.8e-08 ***
+## Washington_short  0.03868    0.00257   15.08  < 2e-16 ***
+## Chicago_short     0.02562    0.00621    4.12  4.6e-05 ***
+## time_short       -0.01540    0.00560   -2.75   0.0063 ** 
+## time_strike      -3.73933    1.14088   -3.28   0.0012 ** 
+## time_post        -0.03625    0.05447   -0.67   0.5061    
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 6.02 on 351 degrees of freedom
+##   (4 observations deleted due to missingness)
+## Multiple R-squared:  0.856,	Adjusted R-squared:  0.852 
+## F-statistic:  209 on 10 and 351 DF,  p-value: <2e-16
+```
+
+```r
+coef_diff_short <- lm_tripRate_short2$coefficients[4] - lm_tripRate_short2$coefficients[5]
+coef_diff_short
+```
+
+```
+## category2 
+##      45.3
+```
+
+```r
+t_short <- glht(lm_tripRate_short2, K_matrix)
+summary(t_short)
+```
+
+```
+## 
+## 	 Simultaneous Tests for General Linear Hypotheses
+## 
+## Fit: lm(formula = Philly_short ~ phil_temp16$MEAN + phil_temp16$PRCP + 
+##     category + Boston_short + Washington_short + Chicago_short + 
+##     time_short + time_strike + time_post)
+## 
+## Linear Hypotheses:
+##        Estimate Std. Error t value Pr(>|t|)    
+## 1 == 0    45.30       5.36    8.46  7.8e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## (Adjusted p values reported -- single-step method)
+```
+
+```r
+table3_6 <- cbind(lm_tripRate_short2$coefficients, confint(lm_tripRate_short2))
+
+table3_6
+```
+
+```
+##                                2.5 %    97.5 %
+## (Intercept)       1.66434 -1.0632054  4.391895
+## phil_temp16$MEAN  0.05572 -0.0063664  0.117815
+## phil_temp16$PRCP -0.52109 -2.0267969  0.984613
+## category2        49.26597 39.0285836 59.503358
+## category3         3.96768  0.0009442  7.934410
+## Boston_short      0.03452  0.0222738  0.046766
+## Washington_short  0.03868  0.0336323  0.043723
+## Chicago_short     0.02562  0.0134021  0.037836
+## time_short       -0.01540 -0.0264239 -0.004377
+## time_strike      -3.73933 -5.9831606 -1.495502
+## time_post        -0.03625 -0.1433709  0.070869
+```
+
+```r
+tripPhilly_fitted_short2 <- lm_tripRate_short2$fitted.values
+fitted_all_short2 <- vector(length = 366)
+fitted_all_short2[1:22] <- tripPhilly_fitted_short2[1:22]
+fitted_all_short2[23:26] <- NA
+fitted_all_short2[27:366] <- tripPhilly_fitted_short2[23:362]
+
+lm_plot_short2 <- ggplot(trip_Philly_short) + geom_line(aes(x = start_time, 
+    y = Philly_short, colour = "Observed data")) + geom_line(aes(x = start_time, 
+    y = fitted_all_short2, colour = "Fitted data")) + theme_classic() + xlab("") + 
+    ylab("Trips per 100K people") + scale_colour_discrete(name = "")
+
+plot(lm_plot_short2)
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-18-2.png)<!-- -->
 
 ### Subset to create datasets for each city
 
@@ -701,6 +1037,7 @@ washington_data <- arrange(filter(city_data, city == "Washington"), start_time)
 pre_period <- as.Date(c("2016-01-01", "2016-10-31"))
 post_period <- as.Date(c("2016-11-01", "2016-12-31"))
 post_period2 <- as.Date(c("2016-11-01", "2016-11-07"))  ##Assess the impact one week after the strike
+post_strike <- as.Date(c("2016-11-08", "2016-12-31"))
 ```
 
 #### Modelling all Philadelphia data
@@ -721,14 +1058,14 @@ summary(impact_phil)
 ## 
 ##                          Average        Cumulative   
 ## Actual                   108            6588         
-## Prediction (s.d.)        147 (12)       8991 (727)   
-## 95% CI                   [124, 170]     [7562, 10396]
+## Prediction (s.d.)        147 (12)       8991 (730)   
+## 95% CI                   [123, 171]     [7522, 10420]
 ##                                                      
-## Absolute effect (s.d.)   -39 (12)       -2403 (727)  
-## 95% CI                   [-62, -16]     [-3808, -974]
+## Absolute effect (s.d.)   -39 (12)       -2403 (730)  
+## 95% CI                   [-63, -15]     [-3832, -934]
 ##                                                      
 ## Relative effect (s.d.)   -27% (8.1%)    -27% (8.1%)  
-## 95% CI                   [-42%, -11%]   [-42%, -11%] 
+## 95% CI                   [-43%, -10%]   [-43%, -10%] 
 ## 
 ## Posterior tail-area probability p:   0.00148
 ## Posterior prob. of a causal effect:  99.85232%
@@ -740,7 +1077,7 @@ summary(impact_phil)
 plot(impact_phil)
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
 
 ```r
 ## Model5.2:Modelling with covaraites: temperature; precipitation; trip-rate
@@ -754,22 +1091,22 @@ summary(impact_phil2, "report")
 ## Analysis report {CausalImpact}
 ## 
 ## 
-## During the post-intervention period, the response variable had an average value of approx. 108.00. In the absence of an intervention, we would have expected an average response of 97.14. The 95% interval of this counterfactual prediction is [86.22, 108.04]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 10.86 with a 95% interval of [-0.040, 21.78]. For a discussion of the significance of this effect, see below.
+## During the post-intervention period, the response variable had an average value of approx. 108.00. In the absence of an intervention, we would have expected an average response of 97.19. The 95% interval of this counterfactual prediction is [86.15, 108.00]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 10.80 with a 95% interval of [-0.0034, 21.85]. For a discussion of the significance of this effect, see below.
 ## 
-## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 6.59K. Had the intervention not taken place, we would have expected a sum of 5.93K. The 95% interval of this prediction is [5.26K, 6.59K].
+## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 6.59K. Had the intervention not taken place, we would have expected a sum of 5.93K. The 95% interval of this prediction is [5.25K, 6.59K].
 ## 
 ## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +11%. The 95% interval of this percentage is [-0%, +22%].
 ## 
 ## This means that, although the intervention appears to have caused a positive effect, this effect is not statistically significant when considering the entire post-intervention period as a whole. Individual days or shorter stretches within the intervention period may of course still have had a significant effect, as indicated whenever the lower limit of the impact time series (lower plot) was above zero. The apparent effect could be the result of random fluctuations that are unrelated to the intervention. This is often the case when the intervention period is very long and includes much of the time when the effect has already worn off. It can also be the case when the intervention period is too short to distinguish the signal from the noise. Finally, failing to find a significant effect can happen when there are not enough control variables or when these variables do not correlate well with the response variable during the learning period.
 ## 
-## The probability of obtaining this effect by chance is very small (Bayesian one-sided tail-area probability p = 0.026). This means the causal effect can be considered statistically significant.
+## The probability of obtaining this effect by chance is very small (Bayesian one-sided tail-area probability p = 0.025). This means the causal effect can be considered statistically significant.
 ```
 
 ```r
 plot(impact_phil2, c("original", "pointwise"))
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-20-2.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-21-2.png)<!-- -->
 
 ```r
 # plot(impact_phil2$model$bsts.model,'coefficients')
@@ -784,13 +1121,13 @@ summary(impact_phil3, "report")
 ## Analysis report {CausalImpact}
 ## 
 ## 
-## During the post-intervention period, the response variable had an average value of approx. 234.37. By contrast, in the absence of an intervention, we would have expected an average response of 148.80. The 95% interval of this counterfactual prediction is [135.54, 161.80]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 85.57 with a 95% interval of [72.56, 98.83]. For a discussion of the significance of this effect, see below.
+## During the post-intervention period, the response variable had an average value of approx. 234.37. By contrast, in the absence of an intervention, we would have expected an average response of 148.81. The 95% interval of this counterfactual prediction is [135.26, 162.67]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 85.56 with a 95% interval of [71.70, 99.10]. For a discussion of the significance of this effect, see below.
 ## 
-## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 1.64K. By contrast, had the intervention not taken place, we would have expected a sum of 1.04K. The 95% interval of this prediction is [0.95K, 1.13K].
+## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 1.64K. By contrast, had the intervention not taken place, we would have expected a sum of 1.04K. The 95% interval of this prediction is [0.95K, 1.14K].
 ## 
-## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +58%. The 95% interval of this percentage is [+49%, +66%].
+## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +57%. The 95% interval of this percentage is [+48%, +67%].
 ## 
-## This means that the positive effect observed during the intervention period is statistically significant and unlikely to be due to random fluctuations. It should be noted, however, that the question of whether this increase also bears substantive significance can only be answered by comparing the absolute effect (85.57) to the original goal of the underlying intervention.
+## This means that the positive effect observed during the intervention period is statistically significant and unlikely to be due to random fluctuations. It should be noted, however, that the question of whether this increase also bears substantive significance can only be answered by comparing the absolute effect (85.56) to the original goal of the underlying intervention.
 ## 
 ## The probability of obtaining this effect by chance is very small (Bayesian one-sided tail-area probability p = 0). This means the causal effect can be considered statistically significant.
 ```
@@ -799,7 +1136,35 @@ summary(impact_phil3, "report")
 plot(impact_phil3, c("original", "pointwise"))
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-20-3.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-21-3.png)<!-- -->
+
+```r
+## Model5.4:Pre-period: strike
+impact_phil4 <- CausalImpact(data = philly_all, pre.period = post_period2, post.period = post_strike, 
+    model.args = list(niter = 5000, nseasons = 7))
+summary(impact_phil4, "report")
+```
+
+```
+## Analysis report {CausalImpact}
+## 
+## 
+## During the post-intervention period, the response variable had an average value of approx. 91.62. In the absence of an intervention, we would have expected an average response of 154.01. The 95% interval of this counterfactual prediction is [-70.87, 357.39]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is -62.39 with a 95% interval of [-265.78, 162.48]. For a discussion of the significance of this effect, see below.
+## 
+## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 4.95K. Had the intervention not taken place, we would have expected a sum of 8.32K. The 95% interval of this prediction is [-3.83K, 19.30K].
+## 
+## The above results are given in terms of absolute numbers. In relative terms, the response variable showed a decrease of-41%. The 95% interval of this percentage is [-173%, +106%].
+## 
+## This means that, although it may look as though the intervention has exerted a negative effect on the response variable when considering the intervention period as a whole, this effect is not statistically significant, and so cannot be meaningfully interpreted. The apparent effect could be the result of random fluctuations that are unrelated to the intervention. This is often the case when the intervention period is very long and includes much of the time when the effect has already worn off. It can also be the case when the intervention period is too short to distinguish the signal from the noise. Finally, failing to find a significant effect can happen when there are not enough control variables or when these variables do not correlate well with the response variable during the learning period.
+## 
+## The probability of obtaining this effect by chance is p = 0.263. This means the effect may be spurious and would generally not be considered statistically significant.
+```
+
+```r
+plot(impact_phil4, c("original", "pointwise"))
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-21-4.png)<!-- -->
 
 ```r
 # ##Dynamic regression: whether to include a time-varying regression
@@ -827,7 +1192,7 @@ Washington_mem[23:26] <- trip_Washington_MA$cnt_ma7[23:26]
 philly_mem_ci <- zoo(cbind(Philly_mem, MEAN = phil_temp16$MEAN, PRCP = phil_temp16$PRCP, 
     Boston_mem, Washington_mem, Chicago_mem), as.Date(philly_data$start_time))
 
-## Model5.4
+## Model5.5
 impact_phil_mem <- CausalImpact(data = philly_mem_ci, pre.period = pre_period, 
     post.period = post_period, model.args = list(niter = 5000, nseasons = 7))
 summary(impact_phil_mem)
@@ -838,17 +1203,17 @@ summary(impact_phil_mem)
 ## 
 ##                          Average        Cumulative   
 ## Actual                   94             5720         
-## Prediction (s.d.)        93 (4.9)       5686 (300.0) 
-## 95% CI                   [84, 103]      [5095, 6266] 
+## Prediction (s.d.)        93 (4.9)       5688 (297.6) 
+## 95% CI                   [84, 102]      [5097, 6245] 
 ##                                                      
-## Absolute effect (s.d.)   0.56 (4.9)     33.95 (300.0)
-## 95% CI                   [-9, 10]       [-546, 625]  
+## Absolute effect (s.d.)   0.53 (4.9)     32.24 (297.6)
+## 95% CI                   [-8.6, 10]     [-524.6, 623]
 ##                                                      
-## Relative effect (s.d.)   0.6% (5.3%)    0.6% (5.3%)  
-## 95% CI                   [-9.6%, 11%]   [-9.6%, 11%] 
+## Relative effect (s.d.)   0.57% (5.2%)   0.57% (5.2%) 
+## 95% CI                   [-9.2%, 11%]   [-9.2%, 11%] 
 ## 
-## Posterior tail-area probability p:   0.4509
-## Posterior prob. of a causal effect:  55%
+## Posterior tail-area probability p:   0.46323
+## Posterior prob. of a causal effect:  54%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
@@ -857,10 +1222,10 @@ summary(impact_phil_mem)
 plot(impact_phil_mem, c("original", "pointwise"))
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
 
 ```r
-## Model5.5
+## Model5.6:Post-period set as one week after the strike
 impact_phil_mem2 <- CausalImpact(data = philly_mem_ci, pre.period = pre_period, 
     post.period = post_period2, model.args = list(niter = 5000, nseasons = 7))
 summary(impact_phil_mem2, "report")
@@ -870,13 +1235,13 @@ summary(impact_phil_mem2, "report")
 ## Analysis report {CausalImpact}
 ## 
 ## 
-## During the post-intervention period, the response variable had an average value of approx. 181.01. By contrast, in the absence of an intervention, we would have expected an average response of 131.72. The 95% interval of this counterfactual prediction is [121.00, 142.61]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 49.29 with a 95% interval of [38.40, 60.01]. For a discussion of the significance of this effect, see below.
+## During the post-intervention period, the response variable had an average value of approx. 181.01. By contrast, in the absence of an intervention, we would have expected an average response of 131.73. The 95% interval of this counterfactual prediction is [121.16, 142.18]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 49.28 with a 95% interval of [38.83, 59.85]. For a discussion of the significance of this effect, see below.
 ## 
 ## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 1.27K. By contrast, had the intervention not taken place, we would have expected a sum of 0.92K. The 95% interval of this prediction is [0.85K, 1.00K].
 ## 
-## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +37%. The 95% interval of this percentage is [+29%, +46%].
+## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +37%. The 95% interval of this percentage is [+29%, +45%].
 ## 
-## This means that the positive effect observed during the intervention period is statistically significant and unlikely to be due to random fluctuations. It should be noted, however, that the question of whether this increase also bears substantive significance can only be answered by comparing the absolute effect (49.29) to the original goal of the underlying intervention.
+## This means that the positive effect observed during the intervention period is statistically significant and unlikely to be due to random fluctuations. It should be noted, however, that the question of whether this increase also bears substantive significance can only be answered by comparing the absolute effect (49.28) to the original goal of the underlying intervention.
 ## 
 ## The probability of obtaining this effect by chance is very small (Bayesian one-sided tail-area probability p = 0). This means the causal effect can be considered statistically significant.
 ```
@@ -885,7 +1250,35 @@ summary(impact_phil_mem2, "report")
 plot(impact_phil_mem2, c("original", "pointwise"))
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-21-2.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+
+```r
+## Model5.7:Pre-period: strike
+impact_phil_mem3 <- CausalImpact(data = philly_mem_ci, pre.period = post_period2, 
+    post.period = post_strike, model.args = list(niter = 5000, nseasons = 7))
+summary(impact_phil_mem3, "report")
+```
+
+```
+## Analysis report {CausalImpact}
+## 
+## 
+## During the post-intervention period, the response variable had an average value of approx. 82.46. In the absence of an intervention, we would have expected an average response of 124.73. The 95% interval of this counterfactual prediction is [-9.57, 264.20]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is -42.27 with a 95% interval of [-181.74, 92.03]. For a discussion of the significance of this effect, see below.
+## 
+## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 4.45K. Had the intervention not taken place, we would have expected a sum of 6.74K. The 95% interval of this prediction is [-0.52K, 14.27K].
+## 
+## The above results are given in terms of absolute numbers. In relative terms, the response variable showed a decrease of-34%. The 95% interval of this percentage is [-146%, +74%].
+## 
+## This means that, although it may look as though the intervention has exerted a negative effect on the response variable when considering the intervention period as a whole, this effect is not statistically significant, and so cannot be meaningfully interpreted. The apparent effect could be the result of random fluctuations that are unrelated to the intervention. This is often the case when the intervention period is very long and includes much of the time when the effect has already worn off. It can also be the case when the intervention period is too short to distinguish the signal from the noise. Finally, failing to find a significant effect can happen when there are not enough control variables or when these variables do not correlate well with the response variable during the learning period.
+## 
+## The probability of obtaining this effect by chance is p = 0.257. This means the effect may be spurious and would generally not be considered statistically significant.
+```
+
+```r
+plot(impact_phil_mem3, c("original", "pointwise"))
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-22-3.png)<!-- -->
 
 #### Modelling Philadelphia data_shortterm
 
@@ -897,7 +1290,7 @@ Washington_short[23:26] <- trip_Washington_MA$cnt_ma7[23:26]
 philly_short_ci <- zoo(cbind(Philly_short, MEAN = phil_temp16$MEAN, PRCP = phil_temp16$PRCP, 
     Boston_short, Washington_short, Chicago_short), as.Date(philly_data$start_time))
 
-## Model5.6
+## Model5.8
 impact_phil_short <- CausalImpact(data = philly_short_ci, pre.period = pre_period, 
     post.period = post_period, model.args = list(niter = 5000, nseasons = 7))
 summary(impact_phil_short)
@@ -906,19 +1299,19 @@ summary(impact_phil_short)
 ```
 ## Posterior inference {CausalImpact}
 ## 
-##                          Average      Cumulative   
-## Actual                   14           868          
-## Prediction (s.d.)        9.9 (1.7)    602.3 (106.5)
-## 95% CI                   [6.4, 13]    [387.4, 805] 
-##                                                    
-## Absolute effect (s.d.)   4.4 (1.7)    265.6 (106.5)
-## 95% CI                   [1, 7.9]     [63, 480.6]  
-##                                                    
-## Relative effect (s.d.)   44% (18%)    44% (18%)    
-## 95% CI                   [10%, 80%]   [10%, 80%]   
+##                          Average       Cumulative   
+## Actual                   14            868          
+## Prediction (s.d.)        9.9 (1.8)     603.0 (107.5)
+## 95% CI                   [6.4, 13]     [387.9, 813] 
+##                                                     
+## Absolute effect (s.d.)   4.3 (1.8)     264.9 (107.5)
+## 95% CI                   [0.9, 7.9]    [54.7, 480.0]
+##                                                     
+## Relative effect (s.d.)   44% (18%)     44% (18%)    
+## 95% CI                   [9.1%, 80%]   [9.1%, 80%]  
 ## 
-## Posterior tail-area probability p:   0.00542
-## Posterior prob. of a causal effect:  99.45838%
+## Posterior tail-area probability p:   0.00682
+## Posterior prob. of a causal effect:  99.31754%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
@@ -927,10 +1320,10 @@ summary(impact_phil_short)
 plot(impact_phil_short, c("original", "pointwise"))
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
 
 ```r
-## Model5.7
+## Model5.9:Post-period set as one week after the strike
 impact_phil_short2 <- CausalImpact(data = philly_short_ci, pre.period = pre_period, 
     post.period = post_period2, model.args = list(niter = 5000, nseasons = 7))
 summary(impact_phil_short2, "report")
@@ -940,11 +1333,11 @@ summary(impact_phil_short2, "report")
 ## Analysis report {CausalImpact}
 ## 
 ## 
-## During the post-intervention period, the response variable had an average value of approx. 53.36. By contrast, in the absence of an intervention, we would have expected an average response of 19.82. The 95% interval of this counterfactual prediction is [14.73, 24.78]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 33.53 with a 95% interval of [28.58, 38.63]. For a discussion of the significance of this effect, see below.
+## During the post-intervention period, the response variable had an average value of approx. 53.36. By contrast, in the absence of an intervention, we would have expected an average response of 19.83. The 95% interval of this counterfactual prediction is [14.74, 24.92]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 33.53 with a 95% interval of [28.44, 38.62]. For a discussion of the significance of this effect, see below.
 ## 
-## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 373.50. By contrast, had the intervention not taken place, we would have expected a sum of 138.76. The 95% interval of this prediction is [103.09, 173.45].
+## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 373.50. By contrast, had the intervention not taken place, we would have expected a sum of 138.80. The 95% interval of this prediction is [103.18, 174.41].
 ## 
-## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +169%. The 95% interval of this percentage is [+144%, +195%].
+## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +169%. The 95% interval of this percentage is [+143%, +195%].
 ## 
 ## This means that the positive effect observed during the intervention period is statistically significant and unlikely to be due to random fluctuations. It should be noted, however, that the question of whether this increase also bears substantive significance can only be answered by comparing the absolute effect (33.53) to the original goal of the underlying intervention.
 ## 
@@ -955,7 +1348,35 @@ summary(impact_phil_short2, "report")
 plot(impact_phil_short2, c("original", "pointwise"))
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-23-2.png)<!-- -->
+
+```r
+## Model5.10:Pre-period: strike
+impact_phil_short3 <- CausalImpact(data = philly_short_ci, pre.period = post_period2, 
+    post.period = post_strike, model.args = list(niter = 5000, nseasons = 7))
+summary(impact_phil_short3, "report")
+```
+
+```
+## Analysis report {CausalImpact}
+## 
+## 
+## During the post-intervention period, the response variable had an average value of approx. 9.16. By contrast, in the absence of an intervention, we would have expected an average response of 46.94. The 95% interval of this counterfactual prediction is [12.27, 80.11]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is -37.79 with a 95% interval of [-70.96, -3.12]. For a discussion of the significance of this effect, see below.
+## 
+## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 494.43. By contrast, had the intervention not taken place, we would have expected a sum of 2534.85. The 95% interval of this prediction is [662.70, 4326.13].
+## 
+## The above results are given in terms of absolute numbers. In relative terms, the response variable showed a decrease of-80%. The 95% interval of this percentage is [-151%, -7%].
+## 
+## This means that the negative effect observed during the intervention period is statistically significant. If the experimenter had expected a positive effect, it is recommended to double-check whether anomalies in the control variables may have caused an overly optimistic expectation of what should have happened in the response variable in the absence of the intervention.
+## 
+## The probability of obtaining this effect by chance is very small (Bayesian one-sided tail-area probability p = 0.018). This means the causal effect can be considered statistically significant.
+```
+
+```r
+plot(impact_phil_short3, c("original", "pointwise"))
+```
+
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-23-3.png)<!-- -->
 
 ## Boston data analysis
 
@@ -972,17 +1393,17 @@ summary(impact_bos)
 ## 
 ##                          Average        Cumulative     
 ## Actual                   356            21719          
-## Prediction (s.d.)        617 (82)       37616 (5026)   
-## 95% CI                   [450, 778]     [27440, 47462] 
+## Prediction (s.d.)        617 (82)       37616 (5021)   
+## 95% CI                   [448, 777]     [27335, 47369] 
 ##                                                        
-## Absolute effect (s.d.)   -261 (82)      -15897 (5026)  
-## 95% CI                   [-422, -94]    [-25743, -5720]
+## Absolute effect (s.d.)   -261 (82)      -15897 (5021)  
+## 95% CI                   [-420, -92]    [-25650, -5615]
 ##                                                        
 ## Relative effect (s.d.)   -42% (13%)     -42% (13%)     
 ## 95% CI                   [-68%, -15%]   [-68%, -15%]   
 ## 
-## Posterior tail-area probability p:   0.00253
-## Posterior prob. of a causal effect:  99.74684%
+## Posterior tail-area probability p:   0.00232
+## Posterior prob. of a causal effect:  99.76793%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
@@ -991,7 +1412,7 @@ summary(impact_bos)
 plot(impact_bos)
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
 
 ## Chicago data anlysis 
 
@@ -1008,17 +1429,17 @@ summary(impact_chi)
 ## 
 ##                          Average        Cumulative     
 ## Actual                   203            12377          
-## Prediction (s.d.)        399 (53)       24369 (3252)   
-## 95% CI                   [293, 503]     [17882, 30682] 
+## Prediction (s.d.)        399 (54)       24369 (3266)   
+## 95% CI                   [293, 504]     [17851, 30749] 
 ##                                                        
-## Absolute effect (s.d.)   -197 (53)      -11991 (3252)  
-## 95% CI                   [-300, -90]    [-18305, -5504]
+## Absolute effect (s.d.)   -197 (54)      -11991 (3266)  
+## 95% CI                   [-301, -90]    [-18372, -5474]
 ##                                                        
 ## Relative effect (s.d.)   -49% (13%)     -49% (13%)     
-## 95% CI                   [-75%, -23%]   [-75%, -23%]   
+## 95% CI                   [-75%, -22%]   [-75%, -22%]   
 ## 
-## Posterior tail-area probability p:   0.00084
-## Posterior prob. of a causal effect:  99.91588%
+## Posterior tail-area probability p:   0.00042
+## Posterior prob. of a causal effect:  99.95794%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
@@ -1027,7 +1448,7 @@ summary(impact_chi)
 plot(impact_chi)  ##Not a good fit to the data
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-25-1.png)<!-- -->
 
 ## Washington data anlysis 
 
@@ -1044,11 +1465,11 @@ summary(impact_DC)
 ## 
 ##                          Average        Cumulative      
 ## Actual                   1043           63643           
-## Prediction (s.d.)        1648 (140)     100532 (8520)   
-## 95% CI                   [1369, 1921]   [83534, 117211] 
+## Prediction (s.d.)        1648 (140)     100532 (8510)   
+## 95% CI                   [1376, 1923]   [83920, 117328] 
 ##                                                         
-## Absolute effect (s.d.)   -605 (140)     -36889 (8520)   
-## 95% CI                   [-878, -326]   [-53568, -19891]
+## Absolute effect (s.d.)   -605 (140)     -36889 (8510)   
+## 95% CI                   [-880, -332]   [-53685, -20278]
 ##                                                         
 ## Relative effect (s.d.)   -37% (8.5%)    -37% (8.5%)     
 ## 95% CI                   [-53%, -20%]   [-53%, -20%]    
@@ -1063,6 +1484,6 @@ summary(impact_DC)
 plot(impact_DC)  ##Not a good fit to the data
 ```
 
-![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-25-1.png)<!-- -->
+![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
 
 
