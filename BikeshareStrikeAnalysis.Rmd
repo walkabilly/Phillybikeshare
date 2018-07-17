@@ -505,18 +505,23 @@ plot(lm_plot_short2)
 observed_data <- c(trip_Philly$by100000, Philly_mem, Philly_short)
 fitted_data <- c(tripPhilly_fitted3, fitted_all2, fitted_all_short2)
 plot_x <- as.Date(rep(trip_Philly$start_time,6))
-plot_y <- c(observed_data,fitted_data)
+plot_y <- c(observed_data, fitted_data)
 data_type <- rep(c(rep("All users", 366), rep("Members", 366), rep("Non-members",366)),2)
-type <- c(rep("Observed", 366*3), rep("Fitted", 366*3))
+type <- c(rep("Observed", 366), rep("Fitted", 366), 
+          rep("Observed", 366), rep("Fitted", 366),
+          rep("Observed", 366), rep("Fitted", 366))
 
-final_data <- data.frame(plot_x=plot_x, plot_y=plot_y, data_type=data_type, values=type)
+final_data <- data.frame(plot_x = plot_x, plot_y = plot_y, data_type = data_type, values = type)
 
 ggplot(data=final_data) +
-  aes(x=plot_x, y=plot_y, color = type, group = values) +
+  aes(x = plot_x, y = plot_y, color = type, group = values) +
   geom_line() +
-  facet_grid( data_type~.)+
-  xlab("")+
-  ylab("Trips per 100K people")
+  facet_grid(data_type ~ .) +
+  annotate("rect", xmin = as.Date("2016-11-01", "%Y-%m-%d"), xmax = as.Date("2016-11-07", "%Y-%m-%d"), 
+                ymin = 0, ymax = 500, alpha = 0.2) + 
+  xlab("") +
+  ylab("Trips per 100K people") + 
+  theme_classic()
 
 ```
 
