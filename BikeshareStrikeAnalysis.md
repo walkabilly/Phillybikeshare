@@ -1090,14 +1090,16 @@ plot_x <- as.Date(rep(trip_Philly$start_time, 6))
 plot_y <- c(observed_data, fitted_data)
 data_type <- rep(c(rep("All users", 366), rep("Members", 366), rep("Non-members", 
     366)), 2)
-type <- c(rep("Observed", 366 * 3), rep("Fitted", 366 * 3))
+type <- c(rep("Observed", 366), rep("Fitted", 366), rep("Observed", 366), rep("Fitted", 
+    366), rep("Observed", 366), rep("Fitted", 366))
 
 final_data <- data.frame(plot_x = plot_x, plot_y = plot_y, data_type = data_type, 
     values = type)
 
 ggplot(data = final_data) + aes(x = plot_x, y = plot_y, color = type, group = values) + 
-    geom_line() + facet_grid(data_type ~ .) + xlab("") + ylab("Trips per 100K people") + 
-    theme_classic()
+    geom_line() + facet_grid(data_type ~ .) + annotate("rect", xmin = as.Date("2016-11-01", 
+    "%Y-%m-%d"), xmax = as.Date("2016-11-07", "%Y-%m-%d"), ymin = 0, ymax = 500, 
+    alpha = 0.2) + xlab("") + ylab("Trips per 100K people") + theme_classic()
 ```
 
 ![](BikeshareStrikeAnalysis_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
@@ -1142,16 +1144,16 @@ summary(impact_phil)
 ```
 ## Posterior inference {CausalImpact}
 ## 
-##                          Average        Cumulative    
-## Actual                   108            6588          
-## Prediction (s.d.)        148 (12)       9009 (717)    
-## 95% CI                   [124, 170]     [7588, 10394] 
-##                                                       
-## Absolute effect (s.d.)   -40 (12)       -2421 (717)   
-## 95% CI                   [-62, -16]     [-3806, -1000]
-##                                                       
-## Relative effect (s.d.)   -27% (8%)      -27% (8%)     
-## 95% CI                   [-42%, -11%]   [-42%, -11%]  
+##                          Average        Cumulative   
+## Actual                   108            6588         
+## Prediction (s.d.)        148 (12)       9009 (718)   
+## 95% CI                   [124, 171]     [7576, 10401]
+##                                                      
+## Absolute effect (s.d.)   -40 (12)       -2421 (718)  
+## 95% CI                   [-63, -16]     [-3813, -988]
+##                                                      
+## Relative effect (s.d.)   -27% (8%)      -27% (8%)    
+## 95% CI                   [-42%, -11%]   [-42%, -11%] 
 ## 
 ## Posterior tail-area probability p:   0.00061
 ## Posterior prob. of a causal effect:  99.93897%
@@ -1177,15 +1179,15 @@ summary(impact_phil2, "report")
 ## Analysis report {CausalImpact}
 ## 
 ## 
-## During the post-intervention period, the response variable had an average value of approx. 108.00. In the absence of an intervention, we would have expected an average response of 97.29. The 95% interval of this counterfactual prediction is [86.62, 108.24]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 10.71 with a 95% interval of [-0.25, 21.37]. For a discussion of the significance of this effect, see below.
+## During the post-intervention period, the response variable had an average value of approx. 108.00. In the absence of an intervention, we would have expected an average response of 97.29. The 95% interval of this counterfactual prediction is [86.67, 108.46]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 10.71 with a 95% interval of [-0.46, 21.33]. For a discussion of the significance of this effect, see below.
 ## 
-## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 6.59K. Had the intervention not taken place, we would have expected a sum of 5.93K. The 95% interval of this prediction is [5.28K, 6.60K].
+## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 6.59K. Had the intervention not taken place, we would have expected a sum of 5.93K. The 95% interval of this prediction is [5.29K, 6.62K].
 ## 
 ## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +11%. The 95% interval of this percentage is [-0%, +22%].
 ## 
 ## This means that, although the intervention appears to have caused a positive effect, this effect is not statistically significant when considering the entire post-intervention period as a whole. Individual days or shorter stretches within the intervention period may of course still have had a significant effect, as indicated whenever the lower limit of the impact time series (lower plot) was above zero. The apparent effect could be the result of random fluctuations that are unrelated to the intervention. This is often the case when the intervention period is very long and includes much of the time when the effect has already worn off. It can also be the case when the intervention period is too short to distinguish the signal from the noise. Finally, failing to find a significant effect can happen when there are not enough control variables or when these variables do not correlate well with the response variable during the learning period.
 ## 
-## The probability of obtaining this effect by chance is very small (Bayesian one-sided tail-area probability p = 0.029). This means the causal effect can be considered statistically significant.
+## The probability of obtaining this effect by chance is very small (Bayesian one-sided tail-area probability p = 0.03). This means the causal effect can be considered statistically significant.
 ```
 
 ```r
@@ -1207,7 +1209,7 @@ summary(impact_phil3, "report")
 ## Analysis report {CausalImpact}
 ## 
 ## 
-## During the post-intervention period, the response variable had an average value of approx. 234.37. By contrast, in the absence of an intervention, we would have expected an average response of 148.90. The 95% interval of this counterfactual prediction is [135.77, 162.32]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 85.47 with a 95% interval of [72.05, 98.59]. For a discussion of the significance of this effect, see below.
+## During the post-intervention period, the response variable had an average value of approx. 234.37. By contrast, in the absence of an intervention, we would have expected an average response of 148.90. The 95% interval of this counterfactual prediction is [135.80, 162.17]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 85.47 with a 95% interval of [72.19, 98.57]. For a discussion of the significance of this effect, see below.
 ## 
 ## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 1.64K. By contrast, had the intervention not taken place, we would have expected a sum of 1.04K. The 95% interval of this prediction is [0.95K, 1.14K].
 ## 
@@ -1235,15 +1237,15 @@ summary(impact_phil4, "report")
 ## Analysis report {CausalImpact}
 ## 
 ## 
-## During the post-intervention period, the response variable had an average value of approx. 91.62. In the absence of an intervention, we would have expected an average response of 147.59. The 95% interval of this counterfactual prediction is [-90.36, 359.32]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is -55.98 with a 95% interval of [-267.70, 181.98]. For a discussion of the significance of this effect, see below.
+## During the post-intervention period, the response variable had an average value of approx. 91.62. In the absence of an intervention, we would have expected an average response of 147.59. The 95% interval of this counterfactual prediction is [-90.76, 359.42]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is -55.98 with a 95% interval of [-267.80, 182.37]. For a discussion of the significance of this effect, see below.
 ## 
-## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 4.95K. Had the intervention not taken place, we would have expected a sum of 7.97K. The 95% interval of this prediction is [-4.88K, 19.40K].
+## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 4.95K. Had the intervention not taken place, we would have expected a sum of 7.97K. The 95% interval of this prediction is [-4.90K, 19.41K].
 ## 
-## The above results are given in terms of absolute numbers. In relative terms, the response variable showed a decrease of-38%. The 95% interval of this percentage is [-181%, +123%].
+## The above results are given in terms of absolute numbers. In relative terms, the response variable showed a decrease of-38%. The 95% interval of this percentage is [-181%, +124%].
 ## 
 ## This means that, although it may look as though the intervention has exerted a negative effect on the response variable when considering the intervention period as a whole, this effect is not statistically significant, and so cannot be meaningfully interpreted. The apparent effect could be the result of random fluctuations that are unrelated to the intervention. This is often the case when the intervention period is very long and includes much of the time when the effect has already worn off. It can also be the case when the intervention period is too short to distinguish the signal from the noise. Finally, failing to find a significant effect can happen when there are not enough control variables or when these variables do not correlate well with the response variable during the learning period.
 ## 
-## The probability of obtaining this effect by chance is p = 0.287. This means the effect may be spurious and would generally not be considered statistically significant.
+## The probability of obtaining this effect by chance is p = 0.286. This means the effect may be spurious and would generally not be considered statistically significant.
 ```
 
 ```r
@@ -1287,18 +1289,18 @@ summary(impact_phil_mem)
 ```
 ## Posterior inference {CausalImpact}
 ## 
-##                          Average        Cumulative     
-## Actual                   94             5720           
-## Prediction (s.d.)        93 (4.8)       5693 (295.3)   
-## 95% CI                   [84, 103]      [5124, 6281]   
-##                                                        
-## Absolute effect (s.d.)   0.45 (4.8)     27.40 (295.3)  
-## 95% CI                   [-9.2, 9.8]    [-561.3, 595.7]
-##                                                        
-## Relative effect (s.d.)   0.48% (5.2%)   0.48% (5.2%)   
-## 95% CI                   [-9.9%, 10%]   [-9.9%, 10%]   
+##                          Average        Cumulative   
+## Actual                   94             5720         
+## Prediction (s.d.)        93 (4.9)       5693 (297.3) 
+## 95% CI                   [84, 103]      [5102, 6279] 
+##                                                      
+## Absolute effect (s.d.)   0.45 (4.9)     27.40 (297.3)
+## 95% CI                   [-9.2, 10]     [-558.9, 618]
+##                                                      
+## Relative effect (s.d.)   0.48% (5.2%)   0.48% (5.2%) 
+## 95% CI                   [-9.8%, 11%]   [-9.8%, 11%] 
 ## 
-## Posterior tail-area probability p:   0.46695
+## Posterior tail-area probability p:   0.46595
 ## Posterior prob. of a causal effect:  53%
 ## 
 ## For more details, type: summary(impact, "report")
@@ -1321,11 +1323,11 @@ summary(impact_phil_mem2, "report")
 ## Analysis report {CausalImpact}
 ## 
 ## 
-## During the post-intervention period, the response variable had an average value of approx. 181.01. By contrast, in the absence of an intervention, we would have expected an average response of 131.82. The 95% interval of this counterfactual prediction is [121.34, 142.85]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 49.19 with a 95% interval of [38.16, 59.67]. For a discussion of the significance of this effect, see below.
+## During the post-intervention period, the response variable had an average value of approx. 181.01. By contrast, in the absence of an intervention, we would have expected an average response of 131.82. The 95% interval of this counterfactual prediction is [120.88, 142.35]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 49.19 with a 95% interval of [38.66, 60.13]. For a discussion of the significance of this effect, see below.
 ## 
 ## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 1.27K. By contrast, had the intervention not taken place, we would have expected a sum of 0.92K. The 95% interval of this prediction is [0.85K, 1.00K].
 ## 
-## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +37%. The 95% interval of this percentage is [+29%, +45%].
+## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +37%. The 95% interval of this percentage is [+29%, +46%].
 ## 
 ## This means that the positive effect observed during the intervention period is statistically significant and unlikely to be due to random fluctuations. It should be noted, however, that the question of whether this increase also bears substantive significance can only be answered by comparing the absolute effect (49.19) to the original goal of the underlying intervention.
 ## 
@@ -1349,15 +1351,15 @@ summary(impact_phil_mem3, "report")
 ## Analysis report {CausalImpact}
 ## 
 ## 
-## During the post-intervention period, the response variable had an average value of approx. 82.46. In the absence of an intervention, we would have expected an average response of 122.17. The 95% interval of this counterfactual prediction is [-20.22, 253.37]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is -39.71 with a 95% interval of [-170.91, 102.68]. For a discussion of the significance of this effect, see below.
+## During the post-intervention period, the response variable had an average value of approx. 82.46. In the absence of an intervention, we would have expected an average response of 122.17. The 95% interval of this counterfactual prediction is [-19.01, 253.89]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is -39.71 with a 95% interval of [-171.43, 101.47]. For a discussion of the significance of this effect, see below.
 ## 
-## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 4.45K. Had the intervention not taken place, we would have expected a sum of 6.60K. The 95% interval of this prediction is [-1.09K, 13.68K].
+## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 4.45K. Had the intervention not taken place, we would have expected a sum of 6.60K. The 95% interval of this prediction is [-1.03K, 13.71K].
 ## 
-## The above results are given in terms of absolute numbers. In relative terms, the response variable showed a decrease of-33%. The 95% interval of this percentage is [-140%, +84%].
+## The above results are given in terms of absolute numbers. In relative terms, the response variable showed a decrease of-33%. The 95% interval of this percentage is [-140%, +83%].
 ## 
 ## This means that, although it may look as though the intervention has exerted a negative effect on the response variable when considering the intervention period as a whole, this effect is not statistically significant, and so cannot be meaningfully interpreted. The apparent effect could be the result of random fluctuations that are unrelated to the intervention. This is often the case when the intervention period is very long and includes much of the time when the effect has already worn off. It can also be the case when the intervention period is too short to distinguish the signal from the noise. Finally, failing to find a significant effect can happen when there are not enough control variables or when these variables do not correlate well with the response variable during the learning period.
 ## 
-## The probability of obtaining this effect by chance is p = 0.258. This means the effect may be spurious and would generally not be considered statistically significant.
+## The probability of obtaining this effect by chance is p = 0.255. This means the effect may be spurious and would generally not be considered statistically significant.
 ```
 
 ```r
@@ -1387,17 +1389,17 @@ summary(impact_phil_short)
 ## 
 ##                          Average       Cumulative    
 ## Actual                   14            868           
-## Prediction (s.d.)        9.9 (1.7)     605.8 (104.4) 
-## 95% CI                   [6.7, 13]     [405.7, 812]  
+## Prediction (s.d.)        9.9 (1.7)     605.8 (102.7) 
+## 95% CI                   [6.6, 13]     [402.8, 812]  
 ##                                                      
-## Absolute effect (s.d.)   4.3 (1.7)     262.1 (104.4) 
-## 95% CI                   [0.91, 7.6]   [55.69, 462.2]
+## Absolute effect (s.d.)   4.3 (1.7)     262.1 (102.7) 
+## 95% CI                   [0.92, 7.6]   [55.90, 465.1]
 ##                                                      
 ## Relative effect (s.d.)   43% (17%)     43% (17%)     
-## 95% CI                   [9.2%, 76%]   [9.2%, 76%]   
+## 95% CI                   [9.2%, 77%]   [9.2%, 77%]   
 ## 
-## Posterior tail-area probability p:   0.0061
-## Posterior prob. of a causal effect:  99.39037%
+## Posterior tail-area probability p:   0.00549
+## Posterior prob. of a causal effect:  99.45133%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
@@ -1419,11 +1421,11 @@ summary(impact_phil_short2, "report")
 ## Analysis report {CausalImpact}
 ## 
 ## 
-## During the post-intervention period, the response variable had an average value of approx. 53.36. By contrast, in the absence of an intervention, we would have expected an average response of 19.87. The 95% interval of this counterfactual prediction is [14.80, 25.10]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 33.48 with a 95% interval of [28.26, 38.56]. For a discussion of the significance of this effect, see below.
+## During the post-intervention period, the response variable had an average value of approx. 53.36. By contrast, in the absence of an intervention, we would have expected an average response of 19.87. The 95% interval of this counterfactual prediction is [14.87, 25.03]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is 33.48 with a 95% interval of [28.32, 38.49]. For a discussion of the significance of this effect, see below.
 ## 
-## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 373.50. By contrast, had the intervention not taken place, we would have expected a sum of 139.12. The 95% interval of this prediction is [103.57, 175.67].
+## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 373.50. By contrast, had the intervention not taken place, we would have expected a sum of 139.12. The 95% interval of this prediction is [104.10, 175.23].
 ## 
-## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +168%. The 95% interval of this percentage is [+142%, +194%].
+## The above results are given in terms of absolute numbers. In relative terms, the response variable showed an increase of +168%. The 95% interval of this percentage is [+143%, +194%].
 ## 
 ## This means that the positive effect observed during the intervention period is statistically significant and unlikely to be due to random fluctuations. It should be noted, however, that the question of whether this increase also bears substantive significance can only be answered by comparing the absolute effect (33.48) to the original goal of the underlying intervention.
 ## 
@@ -1447,11 +1449,11 @@ summary(impact_phil_short3, "report")
 ## Analysis report {CausalImpact}
 ## 
 ## 
-## During the post-intervention period, the response variable had an average value of approx. 9.16. By contrast, in the absence of an intervention, we would have expected an average response of 47.24. The 95% interval of this counterfactual prediction is [12.61, 80.17]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is -38.08 with a 95% interval of [-71.02, -3.46]. For a discussion of the significance of this effect, see below.
+## During the post-intervention period, the response variable had an average value of approx. 9.16. By contrast, in the absence of an intervention, we would have expected an average response of 47.24. The 95% interval of this counterfactual prediction is [12.16, 80.12]. Subtracting this prediction from the observed response yields an estimate of the causal effect the intervention had on the response variable. This effect is -38.08 with a 95% interval of [-70.96, -3.01]. For a discussion of the significance of this effect, see below.
 ## 
-## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 494.43. By contrast, had the intervention not taken place, we would have expected a sum of 2550.98. The 95% interval of this prediction is [681.02, 4329.38].
+## Summing up the individual data points during the post-intervention period (which can only sometimes be meaningfully interpreted), the response variable had an overall value of 494.43. By contrast, had the intervention not taken place, we would have expected a sum of 2550.98. The 95% interval of this prediction is [656.85, 4326.34].
 ## 
-## The above results are given in terms of absolute numbers. In relative terms, the response variable showed a decrease of-81%. The 95% interval of this percentage is [-150%, -7%].
+## The above results are given in terms of absolute numbers. In relative terms, the response variable showed a decrease of-81%. The 95% interval of this percentage is [-150%, -6%].
 ## 
 ## This means that the negative effect observed during the intervention period is statistically significant. If the experimenter had expected a positive effect, it is recommended to double-check whether anomalies in the control variables may have caused an overly optimistic expectation of what should have happened in the response variable in the absence of the intervention.
 ## 
@@ -1479,17 +1481,17 @@ summary(impact_bos)
 ## 
 ##                          Average        Cumulative     
 ## Actual                   356            21719          
-## Prediction (s.d.)        619 (81)       37763 (4915)   
-## 95% CI                   [458, 773]     [27929, 47124] 
+## Prediction (s.d.)        619 (81)       37763 (4919)   
+## 95% CI                   [461, 773]     [28092, 47183] 
 ##                                                        
-## Absolute effect (s.d.)   -263 (81)      -16044 (4915)  
-## 95% CI                   [-416, -102]   [-25405, -6210]
+## Absolute effect (s.d.)   -263 (81)      -16044 (4919)  
+## 95% CI                   [-417, -104]   [-25464, -6373]
 ##                                                        
 ## Relative effect (s.d.)   -42% (13%)     -42% (13%)     
-## 95% CI                   [-67%, -16%]   [-67%, -16%]   
+## 95% CI                   [-67%, -17%]   [-67%, -17%]   
 ## 
-## Posterior tail-area probability p:   0.00105
-## Posterior prob. of a causal effect:  99.89485%
+## Posterior tail-area probability p:   0.00084
+## Posterior prob. of a causal effect:  99.91588%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
@@ -1515,17 +1517,17 @@ summary(impact_chi)
 ## 
 ##                          Average        Cumulative     
 ## Actual                   203            12377          
-## Prediction (s.d.)        401 (53)       24465 (3208)   
-## 95% CI                   [297, 502]     [18129, 30603] 
+## Prediction (s.d.)        401 (53)       24465 (3211)   
+## 95% CI                   [296, 503]     [18066, 30665] 
 ##                                                        
-## Absolute effect (s.d.)   -198 (53)      -12088 (3208)  
-## 95% CI                   [-299, -94]    [-18226, -5752]
+## Absolute effect (s.d.)   -198 (53)      -12088 (3211)  
+## 95% CI                   [-300, -93]    [-18288, -5689]
 ##                                                        
 ## Relative effect (s.d.)   -49% (13%)     -49% (13%)     
-## 95% CI                   [-74%, -24%]   [-74%, -24%]   
+## 95% CI                   [-75%, -23%]   [-75%, -23%]   
 ## 
-## Posterior tail-area probability p:   0.00061
-## Posterior prob. of a causal effect:  99.93906%
+## Posterior tail-area probability p:   0.00041
+## Posterior prob. of a causal effect:  99.95937%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
@@ -1551,17 +1553,17 @@ summary(impact_DC)
 ## 
 ##                          Average        Cumulative      
 ## Actual                   1043           63643           
-## Prediction (s.d.)        1651 (136)     100700 (8290)   
-## 95% CI                   [1387, 1914]   [84610, 116774] 
+## Prediction (s.d.)        1651 (136)     100700 (8283)   
+## 95% CI                   [1390, 1917]   [84776, 116923] 
 ##                                                         
-## Absolute effect (s.d.)   -607 (136)     -37057 (8290)   
-## 95% CI                   [-871, -344]   [-53131, -20967]
+## Absolute effect (s.d.)   -607 (136)     -37057 (8283)   
+## 95% CI                   [-873, -346]   [-53280, -21134]
 ##                                                         
 ## Relative effect (s.d.)   -37% (8.2%)    -37% (8.2%)     
 ## 95% CI                   [-53%, -21%]   [-53%, -21%]    
 ## 
-## Posterior tail-area probability p:   0.00041
-## Posterior prob. of a causal effect:  99.9592%
+## Posterior tail-area probability p:   0.0002
+## Posterior prob. of a causal effect:  99.9796%
 ## 
 ## For more details, type: summary(impact, "report")
 ```
