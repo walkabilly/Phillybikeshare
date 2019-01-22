@@ -93,6 +93,51 @@ philly_member_plot <- ggplot(data = philly_mem_data, aes(x = start_time, y = by1
 plot(philly_member_plot)
 ```
 
+#### Figure 1. 
+```{r}
+strike_dates <- filter(city_data, start_time > "2016-09-01" & start_time < "2016-12-31")
+
+strike_dates <- strike_dates %>%
+                  mutate(recode_city = case_when(
+                        city == "Philly" ~ "Philadelphia",
+                        city == "Chicago" ~ "Chicago",
+                        city == "Boston" ~ "Boston",
+                        city == "Washington" ~ "Washington"))
+
+figure1_a <- ggplot(data = strike_dates, aes(x = start_time, y = number_trips)) +
+  geom_line() +
+  #stat_smooth(aes(group = dummy), method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
+  annotate("rect", xmin = as.Date("2016-11-01", "%Y-%m-%d"), xmax = as.Date("2016-11-07", "%Y-%m-%d"), 
+                ymin = 0, ymax = 20000, alpha = 0.3) + 
+  facet_wrap(~ recode_city) + 
+  xlab("Month") +
+  ylab("Total Number of Trips") + 
+  theme_classic()
+plot(figure1_a)
+ggsave("figure1_a.pdf", width = 10, height = 10, dpi = 300)
+```
+
+#### Descriptive stats
+
+```{r}
+descriptives <- member_data %>%
+  group_by(city) %>%
+    summarise(
+      city_mean = mean(number_trips),
+      city_tot_sd = sd(number_trips), 
+    )
+table(descriptives)
+
+temperature <- phil_temp16 %>%
+    summarise(
+      temp_mean = mean(MEAN),
+      temp_sd = sd(MEAN), 
+      precip_mean = mean(PRCP),
+      precip_sd = sd(PRCP) 
+    )
+```
+
+
 #### Boston
 
 ```{r}
@@ -148,7 +193,6 @@ cityplot_dur_Philly <- ggplot(data = Philly_dur_data, aes(x = start_time, y = mD
   geom_vline(xintercept=as.numeric(city_data$start_time[""]), linetype=4) + 
   facet_wrap(~ city) + 
   theme_classic()
-  
 
 plot(cityplot_dur_Philly)
 ```
@@ -513,16 +557,18 @@ type <- c(rep("Observed", 366), rep("Fitted", 366),
 
 final_data <- data.frame(plot_x = plot_x, plot_y = plot_y, data_type = data_type, values = type)
 
-ggplot(data=final_data) +
-  aes(x = plot_x, y = plot_y, color = type, group = values) +
+final_data_plot <- filter(final_data, plot_x > "2016-09-01" & plot_x < "2016-12-31")
+
+figure2 <-ggplot(data=final_data_plot) +
+  aes(x = plot_x, y = plot_y, color = values, group = values) +
   geom_line() +
   facet_grid(data_type ~ .) +
   annotate("rect", xmin = as.Date("2016-11-01", "%Y-%m-%d"), xmax = as.Date("2016-11-07", "%Y-%m-%d"), 
-                ymin = 0, ymax = 500, alpha = 0.2) + 
+                ymin = 0, ymax = 300, alpha = 0.2) + 
   xlab("") +
   ylab("Trips per 100K people") + 
   theme_classic()
-
+ggsave("figure2.pdf")
 ```
 
 
